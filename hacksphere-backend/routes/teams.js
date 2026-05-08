@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import { verifyToken } from '../middleware/auth.js';
-import { sendTeamInviteEmail } from '../utils/sendEmail.js';
+import { sendTeamInviteEmail } from '../utils/SendEmail.js';
 
 const router = express.Router();
 
