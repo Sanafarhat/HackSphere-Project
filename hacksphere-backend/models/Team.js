@@ -50,6 +50,20 @@ const teamSchema = new mongoose.Schema(
         },
       },
     ],
+    pendingInvites: [
+  {
+    email: String,
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending',
+    },
+    sentAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
     createdAt: {
       type: Date,
       default: Date.now,

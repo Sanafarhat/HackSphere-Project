@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import FindTeamPage from './pages/FindTeamPage';
 import FindMembersPage from './pages/FindMembersPage';
 import IdeaValidatorPage from './pages/IdeaValidatorPage';
+import JoinPage from './pages/JoinPage';
 import './styles/globals.css';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/join" element={<JoinPage />} />
 
           {/* Protected Routes */}
           <Route
