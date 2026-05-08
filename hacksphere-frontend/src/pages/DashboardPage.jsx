@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Users, CheckCircle, AlertCircle, TrendingUp, Calendar, Zap } from 'lucide-react';
 import axios from 'axios';
 
+
+
 export const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -12,6 +14,19 @@ export const DashboardPage = () => {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [resendingEmail, setResendingEmail] = useState(null); // tracks which email is resending
+
+  const handleResendInvite = async (email) => {
+  setResendingEmail(email);
+  try {
+    await axios.post('/api/teams/resend-invite', { email });
+    alert(`Invite resent to ${email}`);
+  } catch (error) {
+    alert(error.response?.data?.message || 'Failed to resend invite');
+  } finally {
+    setResendingEmail(null);
+  }
+};
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -260,38 +275,52 @@ export const DashboardPage = () => {
                     </p>
                     <div className="space-y-2">
                       {team.pendingInvites.map((invite, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-dark-700 rounded-lg p-4 border border-dark-600"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 text-sm font-bold">
-                              {invite.email?.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-white">{invite.email}</p>
-                              <p className="text-xs text-gray-500">
-                                Invited on {new Date(invite.sentAt).toLocaleDateString('en-IN', {
-                                  day: 'numeric', month: 'short', year: 'numeric'
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <span className={`text-xs px-3 py-1 rounded-full font-semibold whitespace-nowrap ${
-                            invite.status === 'accepted'
-                              ? 'bg-green-900 text-green-300'
-                              : invite.status === 'rejected'
-                              ? 'bg-red-900 text-red-300'
-                              : 'bg-yellow-900 text-yellow-300'
-                          }`}>
-                            {invite.status === 'pending'
-                              ? '⏳ Pending'
-                              : invite.status === 'accepted'
-                              ? '✅ Accepted'
-                              : '❌ Declined'}
-                          </span>
-                        </div>
-                      ))}
+  <div
+    key={index}
+    className="flex items-center justify-between bg-dark-700 rounded-lg p-4 border border-dark-600"
+  >
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 text-sm font-bold">
+        {invite.email?.charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <p className="font-semibold text-white">{invite.email}</p>
+        <p className="text-xs text-gray-500">
+          Invited on {new Date(invite.sentAt).toLocaleDateString('en-IN', {
+            day: 'numeric', month: 'short', year: 'numeric'
+          })}
+        </p>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-2">
+      {/* Resend button — only for pending invites and only if current user is leader */}
+      {invite.status === 'pending' && user?._id === team.leader?._id && (
+        <button
+          onClick={() => handleResendInvite(invite.email)}
+          disabled={resendingEmail === invite.email}
+          className="text-xs px-3 py-1 rounded-full border border-accent-500 text-accent-400 hover:bg-accent-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {resendingEmail === invite.email ? '⏳ Sending...' : '🔁 Resend'}
+        </button>
+      )}
+
+      <span className={`text-xs px-3 py-1 rounded-full font-semibold whitespace-nowrap ${
+        invite.status === 'accepted'
+          ? 'bg-green-900 text-green-300'
+          : invite.status === 'rejected'
+          ? 'bg-red-900 text-red-300'
+          : 'bg-yellow-900 text-yellow-300'
+      }`}>
+        {invite.status === 'pending'
+          ? '⏳ Pending'
+          : invite.status === 'accepted'
+          ? '✅ Accepted'
+          : '❌ Declined'}
+      </span>
+    </div>
+  </div>
+))}
                     </div>
 
                     {/* Summary line */}

@@ -32,6 +32,9 @@ router.post('/create', verifyToken, async (req, res) => {
       hasTeam: true,
     });
 
+    // ✅ FIX 1: Fetch full user from DB — req.user from JWT does not include name
+    const leader = await User.findById(req.user._id).select('name');
+
     // Send invite emails to members if provided
     if (memberEmails && memberEmails.length > 0) {
       const pendingInvites = [];
@@ -52,7 +55,7 @@ router.post('/create', verifyToken, async (req, res) => {
           await sendTeamInviteEmail({
             toEmail: email,
             teamName: team.name,
-            teamLeaderName: req.user.name,
+            teamLeaderName: leader.name, // ✅ FIX 1: use leader.name not req.user.name
             inviteToken,
           });
           console.log(`✅ Invite sent to ${email}`);
@@ -266,6 +269,47 @@ router.get('/:teamId', verifyToken, async (req, res) => {
 
     res.json(team);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Resend invite email
+router.post('/resend-invite', verifyToken, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Only the team leader can resend
+    const team = await Team.findOne({ leader: req.user._id });
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found or you are not the leader' });
+    }
+
+    const invite = team.pendingInvites.find(
+      (inv) => inv.email === email && inv.status === 'pending'
+    );
+
+    if (!invite) {
+      return res.status(404).json({ message: 'No pending invite found for this email' });
+    }
+
+    // Generate a fresh token
+    const newToken = crypto.randomBytes(32).toString('hex');
+    invite.token = newToken;
+    invite.sentAt = new Date();
+    await team.save();
+
+    const leader = await User.findById(req.user._id).select('name');
+
+    await sendTeamInviteEmail({
+      toEmail: email,
+      teamName: team.name,
+      teamLeaderName: leader.name,
+      inviteToken: newToken,
+    });
+
+    res.json({ message: `Invite resent to ${email}` });
+  } catch (error) {
+    console.error('Resend invite error:', error);
     res.status(500).json({ message: error.message });
   }
 });

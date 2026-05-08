@@ -2,12 +2,12 @@ import nodemailer from 'nodemailer';
 
 // Create transporter
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // TLS
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT),
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
@@ -104,7 +104,7 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
   `;
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.SMTP_FROM,
     to: toEmail,
     subject: `🚀 You're invited to join "${teamName}" on HackSphere`,
     html,
@@ -116,7 +116,7 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
   const dashboardLink = `${process.env.FRONTEND_URL}/student/dashboard`;
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.SMTP_FROM,
     to: toEmail,
     subject: `✅ You've joined "${teamName}" on HackSphere!`,
     html: `

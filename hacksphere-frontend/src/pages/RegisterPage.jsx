@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, X } from 'lucide-react';
 import axios from 'axios';
 
 export const RegisterPage = () => {
   const [step, setStep] = useState(1);
+  const [teamEmailInput, setTeamEmailInput] = useState(''); // ✅ controlled input
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,22 +29,28 @@ export const RegisterPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
   };
 
+  // ✅ Fixed: uses controlled state instead of getElementById
   const handleAddTeamEmail = () => {
-    const emailInput = document.getElementById('teamEmail');
-    if (emailInput.value.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        teamEmails: [...prev.teamEmails, emailInput.value.trim()],
-      }));
-      emailInput.value = '';
+    const email = teamEmailInput.trim();
+    if (!email) return;
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
     }
+    if (formData.teamEmails.includes(email)) {
+      setError('This email has already been added');
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      teamEmails: [...prev.teamEmails, email],
+    }));
+    setTeamEmailInput('');
+    setError('');
   };
 
   const handleRemoveTeamEmail = (index) => {
@@ -54,17 +61,14 @@ export const RegisterPage = () => {
   };
 
   const handleTeamChoice = (hasTeam, hasIdea) => {
-    setFormData((prev) => ({
-      ...prev,
-      hasTeam,
-      hasIdea,
-    }));
+    setFormData((prev) => ({ ...prev, hasTeam, hasIdea }));
     setStep(4);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       // Validate passwords
@@ -74,44 +78,63 @@ export const RegisterPage = () => {
         return;
       }
 
-      // Register user
-      const userData = await register(formData.email, formData.password, formData.name, 'student');
+      // Step 1 — Register user (sets axios auth header automatically)
+      const userData = await register(
+        formData.email,
+        formData.password,
+        formData.name,
+        'student'
+      );
 
-      // Create team if applicable
-      let teamData = null;
+      // Step 2 — Create team if has team
       if (formData.hasTeam) {
-        const response = await axios.post('/api/teams/create', {
+        if (!formData.teamName.trim()) {
+          setError('Please enter a team name');
+          setLoading(false);
+          return;
+        }
+
+        // Capture any unsaved email still in the input
+        const finalEmails = [...formData.teamEmails];
+        if (teamEmailInput.trim()) {
+          finalEmails.push(teamEmailInput.trim());
+        }
+
+        await axios.post('/api/teams/create', {
           name: formData.teamName,
-          memberEmails: formData.teamEmails,
-          userId: userData._id,
+          description: '',
+          memberEmails: finalEmails,
+          openToMembers: false,
+          maxMembers: 4,
         });
-        teamData = response.data;
-      } else if (formData.hasIdea) {
-        // Store idea in context/state for next step
+      }
+
+      // Step 3 — Store idea if has idea but no team
+      if (!formData.hasTeam && formData.hasIdea && formData.idea) {
         sessionStorage.setItem('pendingIdea', JSON.stringify({
           title: formData.idea,
           userId: userData._id,
         }));
       }
 
+      // Step 4 — Navigate to dashboard
       navigate('/dashboard');
+
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 1: Personal Info
+  // ── STEP 1: Personal Info ──
   if (step === 1) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
         <div className="w-full max-w-lg">
           <div className="glass rounded-2xl p-8 border border-dark-600">
-            <h1 className="text-3xl font-display font-bold mb-2 text-white">
-              Join HackSphere
-            </h1>
-            <p className="text-gray-300 mb-8">Step 1 of 3 — Your Basic Info</p>
+            <h1 className="text-3xl font-display font-bold mb-2 text-white">Join HackSphere</h1>
+            <p className="text-gray-300 mb-8">Step 1 of 4 — Your Basic Info</p>
 
             <form className="space-y-6">
               <div>
@@ -189,14 +212,18 @@ export const RegisterPage = () => {
               </div>
 
               {error && (
-                <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">
-                  {error}
-                </div>
+                <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">{error}</div>
               )}
 
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  if (!formData.name || !formData.email || !formData.department || !formData.year) {
+                    setError('Please fill in all required fields');
+                    return;
+                  }
+                  setStep(2);
+                }}
                 className="w-full btn-primary flex items-center justify-center space-x-2"
               >
                 <span>Continue</span>
@@ -217,16 +244,14 @@ export const RegisterPage = () => {
     );
   }
 
-  // Step 2: Password Setup
+  // ── STEP 2: Password ──
   if (step === 2) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
         <div className="w-full max-w-lg">
           <div className="glass rounded-2xl p-8 border border-dark-600">
-            <h1 className="text-3xl font-display font-bold mb-2 text-white">
-              Set Your Password
-            </h1>
-            <p className="text-gray-300 mb-8">Step 2 of 3 — Secure Your Account</p>
+            <h1 className="text-3xl font-display font-bold mb-2 text-white">Set Your Password</h1>
+            <p className="text-gray-300 mb-8">Step 2 of 4 — Secure Your Account</p>
 
             <form className="space-y-6">
               <div>
@@ -253,12 +278,13 @@ export const RegisterPage = () => {
                   placeholder="••••••••"
                   required
                 />
+                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                  <p className="text-danger text-xs mt-1">Passwords do not match</p>
+                )}
               </div>
 
               {error && (
-                <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">
-                  {error}
-                </div>
+                <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">{error}</div>
               )}
 
               <div className="flex gap-4">
@@ -272,7 +298,21 @@ export const RegisterPage = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStep(3)}
+                  onClick={() => {
+                    if (!formData.password || !formData.confirmPassword) {
+                      setError('Please fill in both password fields');
+                      return;
+                    }
+                    if (formData.password !== formData.confirmPassword) {
+                      setError('Passwords do not match');
+                      return;
+                    }
+                    if (formData.password.length < 6) {
+                      setError('Password must be at least 6 characters');
+                      return;
+                    }
+                    setStep(3);
+                  }}
                   className="flex-1 btn-primary flex items-center justify-center space-x-2"
                 >
                   <span>Continue</span>
@@ -286,72 +326,61 @@ export const RegisterPage = () => {
     );
   }
 
-  // Step 3: Team Choice
+  // ── STEP 3: Team Choice ──
   if (step === 3) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
         <div className="w-full max-w-2xl">
           <div className="glass rounded-2xl p-8 border border-dark-600">
-            <h1 className="text-3xl font-display font-bold mb-2 text-white">
-              Your Team & Idea
-            </h1>
-            <p className="text-gray-300 mb-12">Step 3 of 3 — Choose Your Path</p>
+            <h1 className="text-3xl font-display font-bold mb-2 text-white">Your Team & Idea</h1>
+            <p className="text-gray-300 mb-12">Step 3 of 4 — Choose Your Path</p>
 
             <div className="space-y-4">
-              {/* Path 1: Has Team */}
               <div
                 onClick={() => handleTeamChoice(true, null)}
-                className="card cursor-pointer hover:border-accent-500 p-8"
+                className="card cursor-pointer hover:border-accent-500 p-8 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400">
+                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400 flex-shrink-0">
                     <CheckCircle size={24} />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-2">I have a team</h3>
-                    <p className="text-gray-300">
-                      I already have teammates selected. I'll invite them to join my team after registration.
-                    </p>
+                    <p className="text-gray-300">I already have teammates. I'll invite them via email to join my team.</p>
                   </div>
-                  <ArrowRight className="text-accent-500" size={24} />
+                  <ArrowRight className="text-accent-500 flex-shrink-0" size={24} />
                 </div>
               </div>
 
-              {/* Path 2: No Team, No Idea */}
               <div
                 onClick={() => handleTeamChoice(false, false)}
-                className="card cursor-pointer hover:border-accent-500 p-8"
+                className="card cursor-pointer hover:border-accent-500 p-8 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400">
+                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400 flex-shrink-0">
                     <CheckCircle size={24} />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-2">No team, No idea</h3>
-                    <p className="text-gray-300">
-                      I'm looking to join an existing team that's open to new members. AI will recommend teams based on skill compatibility.
-                    </p>
+                    <p className="text-gray-300">AI will recommend open teams looking for members based on your skills.</p>
                   </div>
-                  <ArrowRight className="text-accent-500" size={24} />
+                  <ArrowRight className="text-accent-500 flex-shrink-0" size={24} />
                 </div>
               </div>
 
-              {/* Path 3: No Team, Has Idea */}
               <div
                 onClick={() => handleTeamChoice(false, true)}
-                className="card cursor-pointer hover:border-accent-500 p-8"
+                className="card cursor-pointer hover:border-accent-500 p-8 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400">
+                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400 flex-shrink-0">
                     <CheckCircle size={24} />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-2">No team, but I have an idea</h3>
-                    <p className="text-gray-300">
-                      I have a great idea but need teammates. AI will recommend solo students to join my team.
-                    </p>
+                    <p className="text-gray-300">AI will recommend solo students to collaborate with you on your idea.</p>
                   </div>
-                  <ArrowRight className="text-accent-500" size={24} />
+                  <ArrowRight className="text-accent-500 flex-shrink-0" size={24} />
                 </div>
               </div>
             </div>
@@ -369,17 +398,17 @@ export const RegisterPage = () => {
     );
   }
 
-  // Step 4: Team Details Based on Path
+  // ── STEP 4: Team Details ──
   if (step === 4) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
         <div className="w-full max-w-lg">
           <div className="glass rounded-2xl p-8 border border-dark-600">
+
+            {/* PATH 1: Has Team */}
             {formData.hasTeam && (
               <>
-                <h1 className="text-3xl font-display font-bold mb-2 text-white">
-                  Invite Your Team
-                </h1>
+                <h1 className="text-3xl font-display font-bold mb-2 text-white">Invite Your Team</h1>
                 <p className="text-gray-300 mb-8">Step 4 of 4 — Add Team Members</p>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
@@ -397,23 +426,34 @@ export const RegisterPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-200 mb-2">Team Members Email</label>
+                    <label className="block text-sm font-semibold text-gray-200 mb-2">
+                      Team Members Email
+                    </label>
+                    {/* ✅ Controlled input */}
                     <div className="flex gap-2 mb-3">
                       <input
                         type="email"
-                        id="teamEmail"
                         className="input-field"
                         placeholder="teammate@college.edu"
+                        value={teamEmailInput}
+                        onChange={(e) => setTeamEmailInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTeamEmail();
+                          }
+                        }}
                       />
                       <button
                         type="button"
                         onClick={handleAddTeamEmail}
-                        className="btn-secondary px-4"
+                        className="btn-secondary px-4 whitespace-nowrap"
                       >
                         Add
                       </button>
                     </div>
 
+                    {/* Email tags */}
                     {formData.teamEmails.length > 0 && (
                       <div className="space-y-2">
                         {formData.teamEmails.map((email, index) => (
@@ -421,24 +461,33 @@ export const RegisterPage = () => {
                             key={index}
                             className="flex items-center justify-between bg-dark-700 rounded-lg p-3"
                           >
-                            <span className="text-sm text-gray-300">{email}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-accent-500/20 flex items-center justify-center text-accent-400 text-xs font-bold">
+                                {email.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm text-gray-300">{email}</span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => handleRemoveTeamEmail(index)}
-                              className="text-danger hover:text-danger text-sm"
+                              className="text-gray-500 hover:text-danger transition-colors"
                             >
-                              Remove
+                              <X size={16} />
                             </button>
                           </div>
                         ))}
                       </div>
                     )}
+
+                    {formData.teamEmails.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Add your teammates' emails above. They'll receive an invite link.
+                      </p>
+                    )}
                   </div>
 
                   {error && (
-                    <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">
-                      {error}
-                    </div>
+                    <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">{error}</div>
                   )}
 
                   <div className="flex gap-4">
@@ -463,24 +512,21 @@ export const RegisterPage = () => {
               </>
             )}
 
+            {/* PATH 2: No Team, No Idea */}
             {!formData.hasTeam && !formData.hasIdea && (
               <>
-                <h1 className="text-3xl font-display font-bold mb-2 text-white">
-                  Ready to Find a Team
-                </h1>
+                <h1 className="text-3xl font-display font-bold mb-2 text-white">Ready to Find a Team</h1>
                 <p className="text-gray-300 mb-8">Step 4 of 4 — Complete Setup</p>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4">
                     <p className="text-primary-300 text-sm">
-                      💡 AI will recommend open teams matching your skills after you complete registration.
+                      💡 After registration, AI will recommend open teams that match your skills. You can browse and send join requests.
                     </p>
                   </div>
 
                   {error && (
-                    <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">
-                      {error}
-                    </div>
+                    <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">{error}</div>
                   )}
 
                   <div className="flex gap-4">
@@ -505,11 +551,10 @@ export const RegisterPage = () => {
               </>
             )}
 
+            {/* PATH 3: No Team, Has Idea */}
             {!formData.hasTeam && formData.hasIdea && (
               <>
-                <h1 className="text-3xl font-display font-bold mb-2 text-white">
-                  Tell Us Your Idea
-                </h1>
+                <h1 className="text-3xl font-display font-bold mb-2 text-white">Tell Us Your Idea</h1>
                 <p className="text-gray-300 mb-8">Step 4 of 4 — Share Your Vision</p>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
@@ -520,22 +565,20 @@ export const RegisterPage = () => {
                       value={formData.idea}
                       onChange={handleInputChange}
                       className="textarea-field"
-                      placeholder="Describe your project idea, problem it solves, and how it works..."
+                      placeholder="Describe your project idea, the problem it solves, and how it works..."
                       rows="5"
                       required
-                    ></textarea>
+                    />
                   </div>
 
                   <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4">
                     <p className="text-primary-300 text-sm">
-                      💡 AI will recommend solo students to join your team based on skill compatibility.
+                      💡 AI will recommend solo students with complementary skills to collaborate with you on your idea.
                     </p>
                   </div>
 
                   {error && (
-                    <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">
-                      {error}
-                    </div>
+                    <div className="bg-danger/20 border border-danger/50 text-danger rounded-lg p-4 text-sm">{error}</div>
                   )}
 
                   <div className="flex gap-4">
@@ -559,6 +602,7 @@ export const RegisterPage = () => {
                 </form>
               </>
             )}
+
           </div>
         </div>
       </div>
