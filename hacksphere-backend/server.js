@@ -46,6 +46,10 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'HackSphere server is running' });
 });
 
+app.get('/api/progress/my-progress', verifyToken, (req, res) => {
+  res.json({ percentage: 0, ideaValidated: false, repoCreated: false, prototypeStarted: false, midCheckpoint: false, finalSubmission: false });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
