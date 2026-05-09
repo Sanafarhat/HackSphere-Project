@@ -10,6 +10,7 @@ import ideaRoutes from './routes/ideas.js';
 import joinRequestRoutes from './routes/joinRequests.js';
 import collaborationRequestRoutes from './routes/collaborationRequests.js';
 import studentRoutes from './routes/students.js';
+import { verifyToken } from './middleware/auth.js';
 
 // Load environment variables
 dotenv.config();
