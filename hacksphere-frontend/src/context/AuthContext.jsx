@@ -7,16 +7,34 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ✅ On app load — check localStorage and restore user state
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-    setLoading(false);
-  }, [token]);
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        try {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          setToken(storedToken);
+          // Fetch user from backend to restore user object
+          const response = await axios.get('/api/auth/me');
+          setUser(response.data);
+        } catch (err) {
+          // Token expired or invalid — clear everything
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+          delete axios.defaults.headers.common['Authorization'];
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+  }, []); // runs once on mount
 
   const register = async (email, password, name, role = 'student') => {
     try {
