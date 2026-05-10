@@ -33,13 +33,10 @@ export const DashboardPage = () => {
       try {
         setLoading(true);
         const responses = await Promise.all([
-  axios.get('/api/teams/my-team').catch(() => null),
-  axios.get('/api/ideas/my-idea').catch((err) => {
-    if (err.response?.status === 404) return null; // no idea yet, that's fine
-    return null;
-  }),
-  axios.get('/api/progress/my-progress').catch(() => null),
-]);
+          axios.get('/api/teams/my-team').catch(() => null),
+          axios.get('/api/ideas/my-idea').catch(() => null),
+          axios.get('/api/progress/my-progress').catch(() => null),
+        ]);
 
         setTeam(responses[0]?.data);
         setIdea(responses[1]?.data);
