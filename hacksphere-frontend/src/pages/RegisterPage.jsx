@@ -100,13 +100,18 @@ export const RegisterPage = () => {
           finalEmails.push(teamEmailInput.trim());
         }
 
-        await axios.post('/api/teams/create', {
-          name: formData.teamName,
-          description: '',
-          memberEmails: finalEmails,
-          openToMembers: false,
-          maxMembers: 4,
-        });
+        const token = localStorage.getItem('token');
+await axios.post('/api/teams/create', {
+  name: formData.teamName,
+  description: '',
+  memberEmails: finalEmails,
+  openToMembers: false,
+  maxMembers: 4,
+}, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
       }
 
       // Step 3 — Store idea if has idea but no team
