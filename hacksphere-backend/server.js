@@ -3,6 +3,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
+import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import teamRoutes from './routes/teams.js';
@@ -64,8 +69,28 @@ app.use(
   })
 );
 
+// Security hardening
+app.use(helmet());
+
+// Rate limiting: basic global limits to mitigate brute force and abuse
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// Parse cookies (for httpOnly JWT cookie)
+app.use(cookieParser());
+
+// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Sanitize user input to prevent NoSQL injection and XSS
+app.use(mongoSanitize());
+app.use(xss());
 
 // Routes
 app.use('/api/auth', authRoutes);

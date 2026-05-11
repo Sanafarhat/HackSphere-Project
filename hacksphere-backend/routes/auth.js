@@ -36,9 +36,16 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set httpOnly cookie for auth (prevents XSS token theft)
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       message: 'User registered successfully',
-      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -80,9 +87,16 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set httpOnly cookie for auth (prevents XSS token theft)
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       message: 'Login successful',
-      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -103,6 +117,12 @@ router.get('/me', verifyToken, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+});
+
+// Logout (clear httpOnly cookie)
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.json({ message: 'Logged out' });
 });
 
 // Update user profile

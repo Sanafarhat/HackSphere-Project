@@ -27,13 +27,10 @@ export const AdminPage = () => {
     const fetchAdminData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const headers = { Authorization: `Bearer ${token}` };
-
         const [ideasRes, teamsRes, submissionsRes] = await Promise.all([
-          axios.get('/api/ideas/admin/all', { headers }).catch(() => ({ data: [] })),
-          axios.get('/api/teams/admin/all', { headers }).catch(() => ({ data: [] })),
-          axios.get('/api/submissions/admin/all', { headers }).catch(() => ({ data: [] })),
+          axios.get('/api/ideas/admin/all').catch(() => ({ data: [] })),
+          axios.get('/api/teams/admin/all').catch(() => ({ data: [] })),
+          axios.get('/api/submissions/admin/all').catch(() => ({ data: [] })),
         ]);
 
         setIdeas(ideasRes.data || []);
@@ -67,12 +64,7 @@ export const AdminPage = () => {
   const handleApproveIdea = async (ideaId, currentStatus) => {
     try {
       setProcessingId(ideaId);
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `/api/ideas/admin/override/${ideaId}`,
-        { approved: !currentStatus, reason: 'Admin approval' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.put(`/api/ideas/admin/override/${ideaId}`, { approved: !currentStatus, reason: 'Admin approval' });
       setIdeas(ideas.map((i) => (i._id === ideaId ? { ...i, isApproved: !currentStatus } : i)));
     } catch (error) {
       alert('Failed to update idea approval');
@@ -84,12 +76,7 @@ export const AdminPage = () => {
   const handleApproveSubmission = async (submissionId, newStatus) => {
     try {
       setProcessingId(submissionId);
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/submissions/admin/${submissionId}`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.patch(`/api/submissions/admin/${submissionId}`, { status: newStatus });
       setSubmissions(submissions.map((s) => (s._id === submissionId ? { ...s, status: newStatus } : s)));
     } catch (error) {
       alert('Failed to update submission status');
@@ -102,8 +89,7 @@ export const AdminPage = () => {
     if (!window.confirm('Are you sure you want to delete this idea?')) return;
     try {
       setProcessingId(ideaId);
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/ideas/admin/${ideaId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`/api/ideas/admin/${ideaId}`);
       setIdeas(ideas.filter((i) => i._id !== ideaId));
     } catch (error) {
       alert('Failed to delete idea');

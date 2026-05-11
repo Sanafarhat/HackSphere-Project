@@ -188,17 +188,12 @@ export const RegisterPage = () => {
           return;
         }
 
-        const token = localStorage.getItem('token');
         await axios.post('/api/teams/create', {
           name: formData.teamName,
           description: '',
           memberEmails: finalEmails,
           openToMembers: false,
           maxMembers: 5,
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         });
 
         registrationPath = 'option-1';
@@ -226,13 +221,8 @@ export const RegisterPage = () => {
         };
 
         // Update user's openToNewMembers flag
-        const token = localStorage.getItem('token');
         await axios.patch('/api/auth/profile', {
           openToNewMembers,
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         });
       }
 

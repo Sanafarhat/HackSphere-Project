@@ -76,10 +76,7 @@ export const DashboardPage = () => {
 
     try {
       setSubmittingMilestone(key);
-      const token = localStorage.getItem('token');
-      const res = await axios.patch('/api/progress/update', { [key]: !currentValue }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.patch('/api/progress/update', { [key]: !currentValue });
       setProgress(res.data);
     } catch (err) {
       console.error('Failed updating milestone', err);
