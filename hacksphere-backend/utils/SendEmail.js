@@ -100,7 +100,10 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
     console.error('Debug log failed', e?.message || e);
   }
 
-  const fromAddress = process.env.RESEND_FROM || process.env.SMTP_FROM || 'noreply@hacksphere.com';
+  const fromAddress = process.env.RESEND_FROM;
+  if (!fromAddress) {
+    throw new Error('RESEND_FROM is required and must be a verified sender in Resend');
+  }
 
   await resend.emails.send({
     from: fromAddress,
@@ -120,7 +123,10 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
     console.error('Debug log failed', e?.message || e);
   }
 
-  const fromAddress = process.env.RESEND_FROM || process.env.SMTP_FROM || 'noreply@hacksphere.com';
+  const fromAddress = process.env.RESEND_FROM;
+  if (!fromAddress) {
+    throw new Error('RESEND_FROM is required and must be a verified sender in Resend');
+  }
 
   await resend.emails.send({
     from: fromAddress,
