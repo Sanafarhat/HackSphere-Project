@@ -93,6 +93,13 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
     </html>
   `;
 
+  // Log attempt for debugging
+  try {
+    _debugSend('Invite', toEmail);
+  } catch (e) {
+    console.error('Debug log failed', e?.message || e);
+  }
+
   await resend.emails.send({
     from: 'noreply@hacksphere.com',
     to: toEmail,
@@ -104,6 +111,12 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
 // ── Send Welcome Email (after invite accepted) ──
 export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
   const dashboardLink = `${process.env.FRONTEND_URL}/student/dashboard`;
+  // Log attempt for debugging
+  try {
+    _debugSend('Welcome', toEmail);
+  } catch (e) {
+    console.error('Debug log failed', e?.message || e);
+  }
 
   await resend.emails.send({
     from: 'noreply@hacksphere.com',
