@@ -2,6 +2,7 @@ import express from 'express';
 import Idea from '../models/Idea.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
+import Progress from '../models/Progress.js';
 import { verifyToken, requireAdmin } from '../middleware/auth.js';
 import { Groq } from 'groq-sdk';
 
@@ -86,6 +87,7 @@ let responseText = message.choices[0]?.message?.content || '';
       techStack,
       targetUsers,
       submittedBy: req.user._id,
+      team: team._id,
       validationScore: validationData.score || 0,
       feasibilityScore: validationData.feasibilityScore || 0,
       originalityScore: validationData.originalityScore || 0,
@@ -97,6 +99,22 @@ let responseText = message.choices[0]?.message?.content || '';
     });
 
     await idea.save();
+
+    // Update team with idea reference
+    team.idea = idea._id;
+    await team.save();
+
+    // Create or update Progress record to mark idea as validated
+    let progress = await Progress.findOne({ team: team._id });
+    if (!progress) {
+      progress = new Progress({
+        team: team._id,
+        ideaValidated: true,
+      });
+    } else {
+      progress.ideaValidated = true;
+    }
+    await progress.save();
 
     res.json({
       _id: idea._id,
@@ -257,6 +275,25 @@ router.put('/admin/override/:ideaId', verifyToken, requireAdmin, async (req, res
     );
 
     res.json(idea);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete idea (admin)
+router.delete('/admin/:ideaId', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const idea = await Idea.findByIdAndDelete(req.params.ideaId);
+    if (!idea) {
+      return res.status(404).json({ message: 'Idea not found' });
+    }
+
+    // Remove idea reference from team if it exists
+    if (idea.team) {
+      await Team.findByIdAndUpdate(idea.team, { idea: null });
+    }
+
+    res.json({ message: 'Idea deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

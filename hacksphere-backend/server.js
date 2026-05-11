@@ -11,6 +11,7 @@ import joinRequestRoutes from './routes/joinRequests.js';
 import collaborationRequestRoutes from './routes/collaborationRequests.js';
 import studentRoutes from './routes/students.js';
 import submissionRoutes from './routes/submissions.js';
+import notificationRoutes from './routes/notifications.js';
 import { verifyToken } from './middleware/auth.js';
 import Progress from './models/Progress.js';
 import Team from './models/Team.js';
@@ -74,6 +75,7 @@ app.use('/api/join-requests', joinRequestRoutes);
 app.use('/api/collaboration-requests', collaborationRequestRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

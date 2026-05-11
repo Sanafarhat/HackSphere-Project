@@ -53,6 +53,7 @@ router.post('/create', verifyToken, async (req, res) => {
     }
 
     const leader = await User.findById(req.user._id);
+    const inviteLink = `${process.env.FRONTEND_URL}/join?token=${invite.token}`;
     if (!leader) {
       return res.status(404).json({ message: 'Leader not found' });
     }
@@ -471,6 +472,7 @@ router.post('/resend-invite', verifyToken, async (req, res) => {
     await team.save();
 
     const leader = await User.findById(req.user._id);
+    const inviteLink = `${process.env.FRONTEND_URL}/join?token=${invite.token}`;
 
     // Fire-and-forget: don't wait on slow SMTP calls — respond quickly and log failures
     sendTeamInviteEmail({
@@ -482,98 +484,17 @@ router.post('/resend-invite', verifyToken, async (req, res) => {
       .then(() => console.log(`Invite resent to ${invite.email}`))
       .catch((e) => console.error('Failed to resend invite:', e.message || e));
 
-    res.json({ message: 'Invite resent (email send queued)' });
+    res.json({
+      message: 'Invite resent (email send queued)',
+      inviteLink,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Validate idea with AI
-router.post('/validate', verifyToken, async (req, res) => {
-  try {
-    const { title, description, problemStatement, techStack, targetUsers } = req.body;
-    const groq = getGroqClient();
-
-    if (!groq) {
-      return res.status(503).json({ message: 'AI validation is unavailable because GROQ_API_KEY is not set.' });
-    }
-
-    const prompt = `You are an expert hackathon judge evaluating a student project idea. Analyze the following hackathon project idea and provide:
-1. Overall validation score (0-100)
-2. Individual scores for: Feasibility (0-100), Originality (0-100), Impact (0-100), Technical Scope (0-100)
-3. Detailed feedback paragraph
-4. 3-4 specific suggestions for improvement
-
-Project Idea:
-Title: ${title}
-Description: ${description}
-Problem Statement: ${problemStatement}
-Tech Stack: ${techStack}
-Target Users: ${targetUsers}
-
-IMPORTANT: Respond in valid JSON format only with this structure:
-{
-  "score": number,
-  "feasibilityScore": number,
-  "originalityScore": number,
-  "impactScore": number,
-  "scopeScore": number,
-  "feedback": "string",
-  "suggestions": ["string", "string", "string"]
-}`;
-
-    const message = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      max_tokens: 1000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    });
-
-    let responseText = message.choices[0]?.message?.content || '';
-
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    const validationData = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-
-    const idea = new Idea({
-      title,
-      description,
-      problemStatement,
-      techStack,
-      targetUsers,
-      submittedBy: req.user._id,
-      validationScore: validationData.score || 0,
-      feasibilityScore: validationData.feasibilityScore || 0,
-      originalityScore: validationData.originalityScore || 0,
-      impactScore: validationData.impactScore || 0,
-      scopeScore: validationData.scopeScore || 0,
-      feedback: validationData.feedback || 'No feedback provided',
-      suggestions: validationData.suggestions || [],
-      isValidated: true,
-    });
-
-    await idea.save();
-
-    res.json({
-      _id: idea._id,
-      score: validationData.score || 0,
-      feasibilityScore: validationData.feasibilityScore || 0,
-      originalityScore: validationData.originalityScore || 0,
-      impactScore: validationData.impactScore || 0,
-      scopeScore: validationData.scopeScore || 0,
-      feedback: validationData.feedback || 'No feedback provided',
-      suggestions: validationData.suggestions || [],
-      title,
-      description,
-    });
-  } catch (error) {
-    console.error('Validation error:', error);
-    res.status(500).json({ message: 'Validation failed: ' + error.message });
-  }
-});
+// Note: Idea validation has been moved to routes/ideas.js to avoid duplication.
+// Team-related routes should focus on team management only.
 
 // Submit idea (finalize)
 router.post('/submit', verifyToken, async (req, res) => {

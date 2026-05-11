@@ -13,6 +13,8 @@ import FindMembersPage from './pages/FindMembersPage';
 import RecommendedTeamsPage from './pages/RecommendedTeamsPage';
 import RecommendedMembersPage from './pages/RecommendedMembersPage';
 import IdeaValidatorPage from './pages/IdeaValidatorPage';
+import AdminPage from './pages/AdminPage';
+import AdminLogin from './pages/AdminLogin';
 import JoinPage from './pages/JoinPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import SubmissionPage from './pages/SubmissionPage';
@@ -81,6 +83,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/admin-login" element={<AdminLogin />} />
 
           <Route
             path="/leaderboard"

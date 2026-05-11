@@ -132,3 +132,33 @@ router.patch('/profile', verifyToken, async (req, res) => {
 });
 
 export default router;
+
+// Seed admin (for local testing only)
+router.post('/seed-admin', async (req, res) => {
+  try {
+    // Only allow seeding when enabled via env var
+    if (process.env.ALLOW_ADMIN_SEED !== 'true') {
+      return res.status(403).json({ message: 'Admin seeding is disabled' });
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL || req.body.email;
+    const adminPassword = process.env.ADMIN_PASSWORD || req.body.password;
+    const adminName = process.env.ADMIN_NAME || req.body.name || 'Admin User';
+
+    if (!adminEmail || !adminPassword) {
+      return res.status(400).json({ message: 'Admin email and password must be provided' });
+    }
+
+    const existing = await User.findOne({ email: adminEmail });
+    if (existing) {
+      return res.status(200).json({ message: 'Admin already exists', user: { email: existing.email, role: existing.role } });
+    }
+
+    const admin = new User({ name: adminName, email: adminEmail, password: adminPassword, role: 'admin' });
+    await admin.save();
+
+    res.status(201).json({ message: 'Admin user created', user: { email: admin.email, role: admin.role } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});

@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middleware/auth.js';
+import { verifyToken, requireAdmin } from '../middleware/auth.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import Submission from '../models/Submission.js';
@@ -83,6 +83,64 @@ router.get('/my', verifyToken, async (req, res) => {
     if (!user || !user.team) return res.status(200).json(null);
     const submission = await Submission.findOne({ team: user.team });
     res.json(submission || null);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get public gallery submissions (accepted projects)
+router.get('/gallery/public', async (req, res) => {
+  try {
+    const submissions = await Submission.find({ status: 'accepted' })
+      .populate('team', 'name description')
+      .populate('submittedBy', 'name')
+      .sort({ submittedAt: -1 })
+      .limit(12);
+
+    res.json(submissions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all submissions (admin)
+router.get('/admin/all', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const submissions = await Submission.find()
+      .populate('team', 'name')
+      .populate('submittedBy', 'name email')
+      .sort({ submittedAt: -1 });
+
+    res.json(submissions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update submission status (admin)
+router.patch('/admin/:submissionId', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['pending', 'submitted', 'accepted', 'rejected'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const submission = await Submission.findByIdAndUpdate(
+      req.params.submissionId,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    res.json(submission);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });

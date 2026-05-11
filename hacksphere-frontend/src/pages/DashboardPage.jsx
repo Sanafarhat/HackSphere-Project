@@ -19,16 +19,27 @@ export const DashboardPage = () => {
   const [resendingEmail, setResendingEmail] = useState(null); // tracks which email is resending
 
   const handleResendInvite = async (email) => {
-  setResendingEmail(email);
-  try {
-    await axios.post('/api/teams/resend-invite', { email });
-    alert(`Invite resent to ${email}`);
-  } catch (error) {
-    alert(error.response?.data?.message || 'Failed to resend invite');
-  } finally {
-    setResendingEmail(null);
-  }
-};
+    setResendingEmail(email);
+    try {
+      const response = await axios.post('/api/teams/resend-invite', { email });
+      const inviteLink = response?.data?.inviteLink;
+
+      if (inviteLink) {
+        try {
+          await navigator.clipboard.writeText(inviteLink);
+          alert(`Invite queued for ${email}. Email may be delayed, so invite link copied:\n${inviteLink}`);
+        } catch {
+          alert(`Invite queued for ${email}. Share this invite link manually:\n${inviteLink}`);
+        }
+      } else {
+        alert(`Invite resent to ${email}`);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to resend invite');
+    } finally {
+      setResendingEmail(null);
+    }
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
