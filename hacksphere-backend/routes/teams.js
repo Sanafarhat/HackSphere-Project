@@ -103,22 +103,26 @@ router.post('/create', verifyToken, async (req, res) => {
 
     const inviteResults = [];
 
+    // Prepare tokens and sentAt timestamps
     for (const invite of team.pendingInvites) {
       invite.token = createInviteToken({ teamId: team._id, email: invite.email });
       invite.sentAt = new Date();
-
-      try {
-        await sendTeamInviteEmail({
-          toEmail: invite.email,
-          teamName: team.name,
-          teamLeaderName: leader.name,
-          inviteToken: invite.token,
-        });
-        inviteResults.push({ email: invite.email, sent: true });
-      } catch (emailError) {
-        inviteResults.push({ email: invite.email, sent: false, error: emailError.message });
-      }
     }
+
+    // Send all invites in parallel to reduce total latency
+    const sendPromises = team.pendingInvites.map((invite) =>
+      sendTeamInviteEmail({
+        toEmail: invite.email,
+        teamName: team.name,
+        teamLeaderName: leader.name,
+        inviteToken: invite.token,
+      })
+        .then(() => ({ email: invite.email, sent: true }))
+        .catch((emailError) => ({ email: invite.email, sent: false, error: emailError.message }))
+    );
+
+    const settled = await Promise.all(sendPromises);
+    inviteResults.push(...settled);
 
     leader.team = team._id;
     leader.hasTeam = true;
@@ -468,14 +472,17 @@ router.post('/resend-invite', verifyToken, async (req, res) => {
 
     const leader = await User.findById(req.user._id);
 
-    await sendTeamInviteEmail({
+    // Fire-and-forget: don't wait on slow SMTP calls — respond quickly and log failures
+    sendTeamInviteEmail({
       toEmail: invite.email,
       teamName: team.name,
       teamLeaderName: leader?.name || 'Team Lead',
       inviteToken: invite.token,
-    });
+    })
+      .then(() => console.log(`Invite resent to ${invite.email}`))
+      .catch((e) => console.error('Failed to resend invite:', e.message || e));
 
-    res.json({ message: 'Invite resent successfully' });
+    res.json({ message: 'Invite resent (email send queued)' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

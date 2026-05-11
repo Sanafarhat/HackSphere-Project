@@ -200,6 +200,13 @@ router.post('/submit', verifyToken, async (req, res) => {
 
 // Get my idea
 router.get('/my-idea', verifyToken, async (req, res) => {
+  console.log('DEBUG /api/ideas/my-idea hit', {
+    path: req.path,
+    method: req.method,
+    originalUrl: req.originalUrl,
+    host: req.headers.host,
+    userId: req.user?._id,
+  });
   try {
     const user = await User.findById(req.user._id);
     let idea = await Idea.findOne({ submittedBy: req.user._id });
