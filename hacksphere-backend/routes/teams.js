@@ -425,9 +425,16 @@ router.post('/accept-invite', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set httpOnly cookie to establish session (prevents XSS token theft)
+    res.cookie('token', tokenPayload, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       message: 'Invite accepted successfully',
-      token: tokenPayload,
       user: {
         _id: user._id,
         name: user.name,

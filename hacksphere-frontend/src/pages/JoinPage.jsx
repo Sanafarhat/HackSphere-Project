@@ -65,8 +65,8 @@ const JoinPage = () => {
         password: form.password,
       });
 
-      // Auto-login the user
-      login(res.data.token, res.data.user);
+      // Set authenticated user (server also sets httpOnly cookie)
+      setUser(res.data.user);
       setPhase('success');
 
       // Redirect after 2.5s
