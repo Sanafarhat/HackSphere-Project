@@ -105,12 +105,19 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
     throw new Error('RESEND_FROM is required and must be a verified sender in Resend');
   }
 
-  await resend.emails.send({
-    from: fromAddress,
-    to: toEmail,
-    subject: `🚀 You're invited to join "${teamName}" on HackSphere`,
-    html,
-  });
+  try {
+    const result = await resend.emails.send({
+      from: fromAddress,
+      to: toEmail,
+      subject: `🚀 You're invited to join "${teamName}" on HackSphere`,
+      html,
+    });
+    console.log('✅ Invite email sent successfully:', result);
+    return result;
+  } catch (err) {
+    console.error('❌ Failed to send invite email:', err);
+    throw err;
+  }
 };
 
 // ── Send Welcome Email (after invite accepted) ──
@@ -128,11 +135,12 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
     throw new Error('RESEND_FROM is required and must be a verified sender in Resend');
   }
 
-  await resend.emails.send({
-    from: fromAddress,
-    to: toEmail,
-    subject: `✅ You've joined "${teamName}" on HackSphere!`,
-    html: `
+  try {
+    const result = await resend.emails.send({
+      from: fromAddress,
+      to: toEmail,
+      subject: `✅ You've joined "${teamName}" on HackSphere!`,
+      html: `
       <body style="background:#080c14;font-family:Arial,sans-serif;padding:40px 20px;">
         <div style="max-width:500px;margin:0 auto;background:#0f1724;border-radius:16px;border:1px solid #1e2f47;padding:40px;text-align:center;">
           <h1 style="color:#00d4ff;margin:0 0 16px;">Welcome to HackSphere! 🎉</h1>
@@ -145,7 +153,13 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
         </div>
       </body>
     `,
-  });
+    });
+    console.log('✅ Welcome email sent successfully:', result);
+    return result;
+  } catch (err) {
+    console.error('❌ Failed to send welcome email:', err);
+    throw err;
+  }
 };
 
 // Debug export and runtime log to help verify which mail client is used on Render
