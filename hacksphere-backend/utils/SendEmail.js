@@ -100,8 +100,10 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
     console.error('Debug log failed', e?.message || e);
   }
 
+  const fromAddress = process.env.RESEND_FROM || process.env.SMTP_FROM || 'noreply@hacksphere.com';
+
   await resend.emails.send({
-    from: 'noreply@hacksphere.com',
+    from: fromAddress,
     to: toEmail,
     subject: `🚀 You're invited to join "${teamName}" on HackSphere`,
     html,
@@ -118,8 +120,10 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
     console.error('Debug log failed', e?.message || e);
   }
 
+  const fromAddress = process.env.RESEND_FROM || process.env.SMTP_FROM || 'noreply@hacksphere.com';
+
   await resend.emails.send({
-    from: 'noreply@hacksphere.com',
+    from: fromAddress,
     to: toEmail,
     subject: `✅ You've joined "${teamName}" on HackSphere!`,
     html: `
