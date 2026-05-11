@@ -1,25 +1,14 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || 587),
-  secure: parseInt(process.env.SMTP_PORT || 587) === 465, // 465 uses SSL, 587 uses STARTTLS
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  family: 4, // ← force IPv4
-});
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify transporter on startup
-transporter.verify((error) => {
-  if (error) {
-    console.error('❌ Email service error:', error.message);
-  } else {
-    console.log('📧 Email service ready');
-  }
-});
+// Verify Resend on startup
+if (process.env.RESEND_API_KEY) {
+  console.log('📧 Email service ready (Resend)');
+} else {
+  console.error('❌ RESEND_API_KEY not found in environment variables');
+}
 
 // ── Send Team Invite Email ──
 export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, inviteToken }) => {
@@ -104,8 +93,8 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
     </html>
   `;
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
+  await resend.emails.send({
+    from: 'noreply@hacksphere.com',
     to: toEmail,
     subject: `🚀 You're invited to join "${teamName}" on HackSphere`,
     html,
@@ -116,8 +105,8 @@ export const sendTeamInviteEmail = async ({ toEmail, teamName, teamLeaderName, i
 export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
   const dashboardLink = `${process.env.FRONTEND_URL}/student/dashboard`;
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
+  await resend.emails.send({
+    from: 'noreply@hacksphere.com',
     to: toEmail,
     subject: `✅ You've joined "${teamName}" on HackSphere!`,
     html: `
@@ -136,4 +125,4 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
   });
 };
 
-export default transporter;
+export const resend_client = resend;
