@@ -35,7 +35,18 @@ const allowedOrigins = [
 
 app.use((req, res, next) => {
   // Helpful debug log for CORS troubleshooting in deployment logs
-  console.log('Incoming Origin:', req.headers.origin);
+  const origin = req.headers.origin;
+  if (!origin) {
+    console.log('Incoming Origin: undefined — possible reasons: same-origin request, curl/health-check, or no Origin header sent. Request info:', {
+      path: req.path,
+      method: req.method,
+      host: req.headers.host,
+      referer: req.headers.referer,
+      ip: req.ip,
+    });
+  } else {
+    console.log('Incoming Origin:', origin);
+  }
   next();
 });
 
