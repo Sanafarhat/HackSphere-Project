@@ -125,4 +125,13 @@ export const sendWelcomeEmail = async ({ toEmail, name, teamName }) => {
   });
 };
 
+// Debug export and runtime log to help verify which mail client is used on Render
 export const resend_client = resend;
+
+// Small runtime debug to help troubleshooting on Render — logs when a send is attempted
+export const _debugSend = (type, to) => {
+  console.log(`📨 [Email Debug] ${type} -> ${to} (using Resend)`, {
+    RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+    FRONTEND_URL: process.env.FRONTEND_URL,
+  });
+};
