@@ -93,6 +93,11 @@ router.put('/respond/:requestId', verifyToken, async (req, res) => {
     await joinRequest.save();
 
     if (status === 'accepted') {
+      // Check team size constraint: max 5 members
+      if (team.members.length >= (team.maxMembers || 5)) {
+        return res.status(400).json({ message: 'Team is full. Maximum 5 members allowed.' });
+      }
+
       // Add student to team
       team.members.push(joinRequest.studentId);
       await team.save();

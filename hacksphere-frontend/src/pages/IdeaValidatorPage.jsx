@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, ArrowLeft, Loader } from 'lucide-react';
 import axios from 'axios';
 
 export const IdeaValidatorPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
@@ -15,13 +16,28 @@ export const IdeaValidatorPage = () => {
     techStack: '',
     targetUsers: '',
   });
+  const [team, setTeam] = useState(null);
+  const [isTeamLead, setIsTeamLead] = useState(false);
   const [validation, setValidation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [revalidateConfirmed, setRevalidateConfirmed] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+    fetchTeam();
     fetchExistingIdea();
-  }, []);
+  }, [user]);
+
+  const fetchTeam = async () => {
+    try {
+      const response = await axios.get('/api/teams/my-team');
+      setTeam(response.data);
+      setIsTeamLead(response.data?.leader?._id === user?._id);
+    } catch (error) {
+      console.error('Failed to load team info');
+    }
+  };
 
   const fetchExistingIdea = async () => {
     try {
@@ -35,7 +51,10 @@ export const IdeaValidatorPage = () => {
           targetUsers: response.data.targetUsers || '',
         });
         setValidation(response.data);
-        setStep(2);
+        const revalidateRequested = searchParams.get('revalidate') === 'true';
+        if (!revalidateRequested) {
+          setStep(2);
+        }
       }
     } catch (error) {
       console.error('No existing idea found');
@@ -51,6 +70,11 @@ export const IdeaValidatorPage = () => {
   };
 
   const handleValidateIdea = async () => {
+    if (searchParams.get('revalidate') === 'true' && validation && !revalidateConfirmed) {
+      setError('Please confirm that you want to delete the previous idea before revalidating.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -63,6 +87,21 @@ export const IdeaValidatorPage = () => {
       setStep(2);
     } catch (err) {
       setError(err.response?.data?.message || 'Validation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartRevalidate = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      await axios.post('/api/ideas/revalidate');
+      setValidation(null);
+      setStep(1);
+      setRevalidateConfirmed(true);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to start revalidation');
     } finally {
       setLoading(false);
     }
@@ -112,6 +151,41 @@ export const IdeaValidatorPage = () => {
         {step === 1 && (
           <div className="glass rounded-2xl p-8 border border-dark-600">
             <h2 className="text-2xl font-bold text-white mb-6">Submit Your Idea</h2>
+
+            {!team ? (
+              <div className="bg-yellow-900/20 border border-yellow-700 text-yellow-200 rounded-lg p-6 mb-6">
+                <p className="font-semibold">Team required</p>
+                <p className="text-sm text-gray-300 mt-2">
+                  Only a team leader can run idea validation. Join or create a team first.
+                </p>
+              </div>
+            ) : !isTeamLead ? (
+              <div className="bg-red-900/20 border border-red-700 text-red-200 rounded-lg p-6 mb-6">
+                <p className="font-semibold">Access restricted</p>
+                <p className="text-sm text-gray-300 mt-2">
+                  Only the team leader <strong>{team?.leader?.name || 'leader'}</strong> can validate the idea.
+                  Please ask them to run validation for your team.
+                </p>
+              </div>
+            ) : null}
+
+            {searchParams.get('revalidate') === 'true' && validation && !revalidateConfirmed && (
+              <div className="bg-red-900/20 border border-red-700 text-red-200 rounded-lg p-6 mb-6">
+                <p className="font-semibold">Confirm Revalidation</p>
+                <p className="text-sm text-gray-300 mt-2">
+                  Revalidating will delete your current idea and its existing validation results.
+                  Once you proceed, you can enter a new idea and validate again.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleStartRevalidate}
+                  disabled={loading}
+                  className="mt-4 btn-secondary w-full py-3"
+                >
+                  {loading ? 'Processing...' : 'Delete Old Idea and Continue'}
+                </button>
+              </div>
+            )}
 
             <form className="space-y-6">
               <div>
@@ -200,7 +274,11 @@ export const IdeaValidatorPage = () => {
               <button
                 type="button"
                 onClick={handleValidateIdea}
-                disabled={loading}
+                disabled={
+                  loading ||
+                  !isTeamLead ||
+                  (searchParams.get('revalidate') === 'true' && validation && !revalidateConfirmed)
+                }
                 className="w-full btn-primary flex items-center justify-center gap-2 py-4"
               >
                 {loading ? (

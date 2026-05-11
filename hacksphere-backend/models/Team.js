@@ -51,19 +51,23 @@ const teamSchema = new mongoose.Schema(
       },
     ],
     pendingInvites: [
-  {
-    email: String,
-    status: {
-      type: String,
-      enum: ['pending', 'accepted', 'rejected'],
-      default: 'pending',
-    },
-    sentAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-],
+      {
+        email: String,
+        token: String,
+        invitedName: String,
+        status: {
+          type: String,
+          enum: ['pending', 'accepted', 'rejected'],
+          default: 'pending',
+        },
+        sentAt: {
+          type: Date,
+          default: Date.now,
+        },
+        acceptedAt: Date,
+        rejectedAt: Date,
+      },
+    ],
     createdAt: {
       type: Date,
       default: Date.now,

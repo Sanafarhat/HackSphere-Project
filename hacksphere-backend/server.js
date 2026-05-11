@@ -10,7 +10,11 @@ import ideaRoutes from './routes/ideas.js';
 import joinRequestRoutes from './routes/joinRequests.js';
 import collaborationRequestRoutes from './routes/collaborationRequests.js';
 import studentRoutes from './routes/students.js';
+import submissionRoutes from './routes/submissions.js';
 import { verifyToken } from './middleware/auth.js';
+import Progress from './models/Progress.js';
+import Team from './models/Team.js';
+import User from './models/User.js';
 
 // Load environment variables
 dotenv.config();
@@ -41,14 +45,167 @@ app.use('/api/ideas', ideaRoutes);
 app.use('/api/join-requests', joinRequestRoutes);
 app.use('/api/collaboration-requests', collaborationRequestRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/submissions', submissionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ message: 'HackSphere server is running' });
 });
 
-app.get('/api/progress/my-progress', verifyToken, (req, res) => {
-  res.json({ percentage: 0, ideaValidated: false, repoCreated: false, prototypeStarted: false, midCheckpoint: false, finalSubmission: false });
+// Calculate progress percentage using milestone weights
+const calculatePercentage = (p) => {
+  // weights (sum to 100)
+  const weights = {
+    ideaValidated: 30,
+    repoCreated: 20,
+    prototypeStarted: 20,
+    midCheckpoint: 15,
+    finalSubmission: 15,
+  };
+  let percent = 0;
+  for (const key of Object.keys(weights)) {
+    if (p[key]) percent += weights[key];
+  }
+  return Math.min(100, Math.round(percent));
+};
+
+// Get current user's team progress
+app.get('/api/progress/my-progress', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user || !user.team) return res.status(200).json(null);
+
+    const team = await Team.findById(user.team).populate('idea');
+
+    // Try to find a progress document
+    let progress = await Progress.findOne({ team: team._id });
+
+    // If no progress doc exists, synthesize from available data
+    if (!progress) {
+      const synth = {
+        team: team._id,
+        ideaValidated: Boolean(team.idea && team.idea.isValidated),
+        repoCreated: false,
+        prototypeStarted: false,
+        midCheckpoint: false,
+        finalSubmission: false,
+        percentage: 0,
+        deadlines: {},
+      };
+      synth.percentage = calculatePercentage(synth);
+      return res.json(synth);
+    }
+
+    // If progress has explicit percentage, use it; otherwise compute
+    const data = {
+      team: progress.team,
+      ideaValidated: progress.ideaValidated || Boolean(team?.idea?.isValidated),
+      repoCreated: progress.repoCreated,
+      prototypeStarted: progress.prototypeStarted,
+      midCheckpoint: progress.midCheckpoint,
+      finalSubmission: progress.finalSubmission,
+      deadlines: progress.deadlines || {},
+    };
+    data.percentage = progress.percentage && progress.percentage > 0 ? progress.percentage : calculatePercentage(data);
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Alerts: return simple alerts for missing milestones and upcoming deadlines
+app.get('/api/progress/alerts', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user || !user.team) return res.status(200).json([]);
+    const progress = await Progress.findOne({ team: user.team });
+    const team = await Team.findById(user.team).populate('leader', 'name');
+
+    const alerts = [];
+    const now = new Date();
+
+    const p = progress || {};
+
+    if (!p.ideaValidated && (!p.deadlines || !p.deadlines.ideaValidationBy || new Date(p.deadlines.ideaValidationBy) > now)) {
+      alerts.push({ type: 'milestone', message: 'Idea not validated yet. Validate before the deadline.', priority: 'high' });
+    }
+
+    if (p.deadlines && p.deadlines.finalSubmissionBy) {
+      const daysLeft = Math.ceil((new Date(p.deadlines.finalSubmissionBy) - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft <= 3 && daysLeft >= 0) {
+        alerts.push({ type: 'deadline', message: `Final submission due in ${daysLeft} day(s).`, priority: 'high', daysLeft });
+      } else if (daysLeft < 0) {
+        alerts.push({ type: 'deadline', message: `Final submission overdue by ${Math.abs(daysLeft)} day(s).`, priority: 'critical', daysLeft });
+      }
+    }
+
+    // Generic reminders
+    if (!p.repoCreated) alerts.push({ type: 'reminder', message: 'Create your project repository.', priority: 'medium' });
+    if (!p.prototypeStarted) alerts.push({ type: 'reminder', message: 'Start working on a prototype.', priority: 'medium' });
+
+    res.json({ team: { id: team._id, name: team.name, leader: team.leader?.name }, alerts });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Leaderboard: teams sorted by progress percentage desc
+app.get('/api/progress/leaderboard', async (req, res) => {
+  try {
+    // get all progress docs, compute percentage if missing, join team and leader
+    const progresses = await Progress.find().lean();
+    const rows = [];
+    for (const p of progresses) {
+      const team = await Team.findById(p.team).populate('leader', 'name');
+      if (!team) continue;
+      const percent = p.percentage && p.percentage > 0 ? p.percentage : calculatePercentage(p);
+      rows.push({ teamId: team._id, teamName: team.name, leader: team.leader?.name, percentage: percent, members: team.members?.length || 0 });
+    }
+    rows.sort((a, b) => b.percentage - a.percentage);
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update progress (only team lead can update their team's milestones)
+app.patch('/api/progress/update', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user || !user.team) return res.status(400).json({ message: 'You are not part of a team' });
+
+    const team = await Team.findById(user.team);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    // Only leader may update
+    if (team.leader.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the team leader can update progress' });
+    }
+
+    // Allowed fields to update
+    const allowed = ['ideaValidated', 'repoCreated', 'prototypeStarted', 'midCheckpoint', 'finalSubmission', 'deadlines'];
+    let progress = await Progress.findOne({ team: team._id });
+    if (!progress) {
+      progress = new Progress({ team: team._id });
+    }
+
+    for (const key of Object.keys(req.body || {})) {
+      if (!allowed.includes(key)) continue;
+      progress[key] = req.body[key];
+    }
+
+    // Recompute percentage unless explicitly provided
+    progress.percentage = calculatePercentage(progress);
+    await progress.save();
+
+    res.json(progress);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
 // 404 handler

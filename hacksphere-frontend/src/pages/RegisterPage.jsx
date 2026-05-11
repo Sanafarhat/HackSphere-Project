@@ -1,12 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, ArrowRight, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, X, ChevronDown } from 'lucide-react';
 import axios from 'axios';
+
+const SKILLS_OPTIONS = [
+  'React',
+  'Vue.js',
+  'Angular',
+  'Node.js',
+  'Python',
+  'Java',
+  'C++',
+  'JavaScript',
+  'TypeScript',
+  'SQL',
+  'MongoDB',
+  'PostgreSQL',
+  'AWS',
+  'Google Cloud',
+  'Docker',
+  'Kubernetes',
+  'Git',
+  'REST API',
+  'GraphQL',
+  'Machine Learning',
+  'Data Science',
+  'UI/UX Design',
+  'Figma',
+  'Adobe XD',
+  'Agile',
+  'Project Management',
+  'Communication',
+  'Leadership',
+];
 
 export const RegisterPage = () => {
   const [step, setStep] = useState(1);
   const [teamEmailInput, setTeamEmailInput] = useState(''); // ✅ controlled input
+  const [skillsDropdownOpen, setSkillsDropdownOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,7 +46,7 @@ export const RegisterPage = () => {
     confirmPassword: '',
     department: '',
     year: '',
-    skills: '',
+    skills: [],
     hasTeam: null,
     hasIdea: null,
     teamName: '',
@@ -24,8 +56,24 @@ export const RegisterPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [openToNewMembers, setOpenToNewMembers] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const skillsDropdownRef = useRef(null);
+
+  // Close skills dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (skillsDropdownRef.current && !skillsDropdownRef.current.contains(event.target)) {
+        setSkillsDropdownOpen(false);
+      }
+    };
+
+    if (skillsDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [skillsDropdownOpen]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -45,6 +93,10 @@ export const RegisterPage = () => {
       setError('This email has already been added');
       return;
     }
+    if (formData.teamEmails.length >= 5) {
+      setError('Maximum 5 team members allowed (including you)');
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       teamEmails: [...prev.teamEmails, email],
@@ -58,6 +110,18 @@ export const RegisterPage = () => {
       ...prev,
       teamEmails: prev.teamEmails.filter((_, i) => i !== index),
     }));
+  };
+
+  const handleSkillToggle = (skill) => {
+    setFormData((prev) => {
+      const newSkills = prev.skills.includes(skill)
+        ? prev.skills.filter((s) => s !== skill)
+        : prev.skills.length < 4
+        ? [...prev.skills, skill]
+        : prev.skills;
+      return { ...prev, skills: newSkills };
+    });
+    setError('');
   };
 
   const handleTeamChoice = (hasTeam, hasIdea) => {
@@ -78,6 +142,13 @@ export const RegisterPage = () => {
         return;
       }
 
+      // Validate skills (2-4 required)
+      if (formData.skills.length < 2 || formData.skills.length > 4) {
+        setError('Please select 2-4 skills');
+        setLoading(false);
+        return;
+      }
+
       // Step 1 — Register user (sets axios auth header automatically)
       const userData = await register(
         formData.email,
@@ -86,7 +157,11 @@ export const RegisterPage = () => {
         'student'
       );
 
-      // Step 2 — Create team if has team
+      // Determine registration path
+      let registrationPath = 'option-1';
+      let registrationData = {};
+
+      // Step 2 — Create team if has team (Option 1)
       if (formData.hasTeam) {
         if (!formData.teamName.trim()) {
           setError('Please enter a team name');
@@ -100,30 +175,78 @@ export const RegisterPage = () => {
           finalEmails.push(teamEmailInput.trim());
         }
 
+        // Validate team size: must have at least 3 more members (4 total with lead) or up to 5
+        if (finalEmails.length < 3) {
+          setError('You must add at least 3 teammates (4 members total with you)');
+          setLoading(false);
+          return;
+        }
+
+        if (finalEmails.length > 5) {
+          setError('Maximum 5 team members allowed (including you)');
+          setLoading(false);
+          return;
+        }
+
         const token = localStorage.getItem('token');
-await axios.post('/api/teams/create', {
-  name: formData.teamName,
-  description: '',
-  memberEmails: finalEmails,
-  openToMembers: false,
-  maxMembers: 4,
-}, {
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-});
-      }
+        await axios.post('/api/teams/create', {
+          name: formData.teamName,
+          description: '',
+          memberEmails: finalEmails,
+          openToMembers: false,
+          maxMembers: 5,
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
-      // Step 3 — Store idea if has idea but no team
-      if (!formData.hasTeam && formData.hasIdea && formData.idea) {
-        sessionStorage.setItem('pendingIdea', JSON.stringify({
-          title: formData.idea,
+        registrationPath = 'option-1';
+      } 
+      // Option 2: No team, no idea
+      else if (!formData.hasTeam && !formData.hasIdea) {
+        registrationPath = 'option-2';
+        registrationData = {
           userId: userData._id,
-        }));
+          userSkills: formData.skills,
+          userDepartment: formData.department,
+          userYear: formData.year,
+        };
+      }
+      // Option 3: No team, has idea
+      else if (!formData.hasTeam && formData.hasIdea && formData.idea) {
+        registrationPath = 'option-3';
+        registrationData = {
+          userId: userData._id,
+          idea: formData.idea,
+          userSkills: formData.skills,
+          userDepartment: formData.department,
+          userYear: formData.year,
+          openToNewMembers,
+        };
+
+        // Update user's openToNewMembers flag
+        const token = localStorage.getItem('token');
+        await axios.patch('/api/auth/profile', {
+          openToNewMembers,
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
       }
 
-      // Step 4 — Navigate to dashboard
-      navigate('/dashboard');
+      // Navigate to payment or dashboard based on path
+      if (registrationPath === 'option-1') {
+        navigate('/dashboard', { state: { paymentCompleted: true } });
+      } else {
+        navigate('/payment', { 
+          state: { 
+            registrationPath, 
+            registrationData 
+          } 
+        });
+      }
 
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -204,16 +327,69 @@ await axios.post('/api/teams/create', {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Skills (comma-separated)</label>
-                <input
-                  type="text"
-                  name="skills"
-                  value={formData.skills}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  placeholder="React, Python, UI Design"
-                />
+              <div ref={skillsDropdownRef}>
+                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                  Skills (Select 2-4)
+                  <span className="text-xs text-gray-400 ml-1">
+                    {formData.skills.length}/4 selected
+                  </span>
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSkillsDropdownOpen(!skillsDropdownOpen)}
+                    className="w-full input-field flex items-center justify-between text-left"
+                  >
+                    <span>
+                      {formData.skills.length === 0
+                        ? 'Select your skills...'
+                        : formData.skills.join(', ')}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className={`transition-transform ${skillsDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {skillsDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 border border-dark-600 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {SKILLS_OPTIONS.map((skill) => (
+                        <label
+                          key={skill}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-dark-700 cursor-pointer border-b border-dark-600 last:border-b-0 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.skills.includes(skill)}
+                            onChange={() => handleSkillToggle(skill)}
+                            disabled={!formData.skills.includes(skill) && formData.skills.length >= 4}
+                            className="w-4 h-4 accent-accent-500 cursor-pointer"
+                          />
+                          <span className="text-gray-200">{skill}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {formData.skills.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="inline-flex items-center gap-2 bg-accent-500/20 border border-accent-500 text-accent-300 px-3 py-1 rounded-full text-sm"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => handleSkillToggle(skill)}
+                          className="hover:text-accent-400"
+                        >
+                          <X size={14} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {error && (
@@ -433,6 +609,9 @@ await axios.post('/api/teams/create', {
                   <div>
                     <label className="block text-sm font-semibold text-gray-200 mb-2">
                       Team Members Email
+                      <span className="text-accent-400 ml-2 text-xs font-normal">
+                        {formData.teamEmails.length + 1}/5 members
+                      </span>
                     </label>
                     {/* ✅ Controlled input */}
                     <div className="flex gap-2 mb-3">
@@ -448,11 +627,13 @@ await axios.post('/api/teams/create', {
                             handleAddTeamEmail();
                           }
                         }}
+                        disabled={formData.teamEmails.length >= 5}
                       />
                       <button
                         type="button"
                         onClick={handleAddTeamEmail}
-                        className="btn-secondary px-4 whitespace-nowrap"
+                        disabled={formData.teamEmails.length >= 5}
+                        className="btn-secondary px-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Add
                       </button>
@@ -486,7 +667,19 @@ await axios.post('/api/teams/create', {
 
                     {formData.teamEmails.length === 0 && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Add your teammates' emails above. They'll receive an invite link.
+                        Add at least 3 teammates (4 total with you). 5th member is optional.
+                      </p>
+                    )}
+
+                    {formData.teamEmails.length >= 4 && (
+                      <p className="text-xs text-success mt-1">
+                        ✓ Minimum team size reached. You can add 1 more optional member.
+                      </p>
+                    )}
+
+                    {formData.teamEmails.length >= 5 && (
+                      <p className="text-xs text-primary-400 mt-1">
+                        Maximum team size reached. You can enable "Open to New Members" in the dashboard later.
                       </p>
                     )}
                   </div>
@@ -574,6 +767,20 @@ await axios.post('/api/teams/create', {
                       rows="5"
                       required
                     />
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 bg-dark-700 rounded-lg border border-dark-600">
+                    <input
+                      type="checkbox"
+                      id="openToNewMembers"
+                      checked={openToNewMembers}
+                      onChange={(e) => setOpenToNewMembers(e.target.checked)}
+                      className="w-5 h-5 accent-accent-500 cursor-pointer"
+                    />
+                    <label htmlFor="openToNewMembers" className="cursor-pointer flex-1">
+                      <p className="font-semibold text-gray-200">Open to New Members</p>
+                      <p className="text-xs text-gray-400 mt-1">Allow solo students to find and invite you to their teams</p>
+                    </label>
                   </div>
 
                   <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4">

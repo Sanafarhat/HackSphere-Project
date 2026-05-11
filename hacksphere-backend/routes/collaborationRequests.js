@@ -104,6 +104,11 @@ router.put('/respond/:requestId', verifyToken, async (req, res) => {
         });
         await team.save();
       } else {
+        // Check team size constraint: max 5 members
+        if (team.members.length >= (team.maxMembers || 5)) {
+          return res.status(400).json({ message: 'Team is full. Maximum 5 members allowed.' });
+        }
+
         // Add to existing team
         if (!team.members.includes(request.studentId)) {
           team.members.push(request.studentId);

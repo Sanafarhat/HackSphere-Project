@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    openToNewMembers: {
+      type: Boolean,
+      default: false,
+    },
     team: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Team',
@@ -66,7 +70,7 @@ const userSchema = new mongoose.Schema(
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
 
   try {

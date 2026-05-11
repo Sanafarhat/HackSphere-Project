@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, LogOut, LogIn } from 'lucide-react';
 
@@ -7,6 +7,23 @@ export const Navigation = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    // Not on page — navigate to home then attempt to scroll
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const el2 = document.getElementById(id);
+        if (el2) el2.scrollIntoView({ behavior: 'smooth' });
+      }, 350);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -30,12 +47,13 @@ export const Navigation = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/#features" className="nav-link">
+            <button onClick={() => scrollToSection('features')} className="nav-link">
               Features
-            </Link>
-            <Link to="/#journey" className="nav-link">
+            </button>
+            <button onClick={() => scrollToSection('journey')} className="nav-link">
               Journey
-            </Link>
+            </button>
+            <Link to="/gallery" className="nav-link">Gallery</Link>
             {!user && (
               <>
                 <Link to="/register" className="nav-link">
@@ -101,6 +119,13 @@ export const Navigation = () => {
               onClick={() => setIsOpen(false)}
             >
               Journey
+            </Link>
+            <Link
+              to="/gallery"
+              className="nav-link block py-2"
+              onClick={() => setIsOpen(false)}
+            >
+              Gallery
             </Link>
             {!user && (
               <>

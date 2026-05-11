@@ -6,30 +6,43 @@ import { verifyToken, requireAdmin } from '../middleware/auth.js';
 import { Groq } from 'groq-sdk';
 
 const router = express.Router();
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+
+const getGroqClient = () => {
+  if (!process.env.GROQ_API_KEY) {
+    return null;
+  }
+
+  return new Groq({
+    apiKey: process.env.GROQ_API_KEY,
+  });
+};
 
 // Validate idea with AI
 router.post('/validate', verifyToken, async (req, res) => {
   try {
     const { title, description, problemStatement, techStack, targetUsers } = req.body;
+    const groq = getGroqClient();
+
+    if (!groq) {
+      return res.status(503).json({ message: 'AI validation is unavailable because GROQ_API_KEY is not set.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user?.team) {
+      return res.status(403).json({ message: 'Only the team leader can validate this idea' });
+    }
+
+    const team = await Team.findById(user.team);
+    if (!team || team.leader.toString() !== req.user._id) {
+      return res.status(403).json({ message: 'Only the team leader can validate this idea' });
+    }
 
     // Create prompt for Groq
-    const prompt = `You are an expert hackathon judge evaluating a student project idea. Analyze the following hackathon project idea and provide:
-1. Overall validation score (0-100)
-2. Individual scores for: Feasibility (0-100), Originality (0-100), Impact (0-100), Technical Scope (0-100)
-3. Detailed feedback paragraph
-4. 3-4 specific suggestions for improvement
+    const prompt = `You are an experienced hackathon judge and technical reviewer. Evaluate the idea honestly and directly without sugarcoating. Identify major strengths, weaknesses, risks, and practical concerns.
 
-Project Idea:
-Title: ${title}
-Description: ${description}
-Problem Statement: ${problemStatement}
-Tech Stack: ${techStack}
-Target Users: ${targetUsers}
+Respond in clear, professional language and provide realistic, actionable guidance. Do not use vague praise or softening words. Be precise, candid, and grounded in real hackathon constraints.
 
-IMPORTANT: Respond in valid JSON format only with this structure:
+Return the response only in valid JSON format with this structure:
 {
   "score": number,
   "feasibilityScore": number,
@@ -38,7 +51,15 @@ IMPORTANT: Respond in valid JSON format only with this structure:
   "scopeScore": number,
   "feedback": "string",
   "suggestions": ["string", "string", "string"]
-}`;
+}
+
+Project Idea:
+Title: ${title}
+Description: ${description}
+Problem Statement: ${problemStatement}
+Tech Stack: ${techStack}
+Target Users: ${targetUsers}
+`;
 
     const message = await groq.chat.completions.create({
   model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
@@ -95,6 +116,31 @@ let responseText = message.choices[0]?.message?.content || '';
   }
 });
 
+// Revalidate idea: remove previous idea and allow a fresh validation
+router.post('/revalidate', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user?.team) {
+      return res.status(400).json({ message: 'You must belong to a team to revalidate' });
+    }
+
+    const team = await Team.findById(user.team);
+    if (!team || team.leader.toString() !== req.user._id) {
+      return res.status(403).json({ message: 'Only the team leader can revalidate the idea' });
+    }
+
+    if (team.idea) {
+      await Idea.findByIdAndDelete(team.idea);
+      team.idea = undefined;
+      await team.save();
+    }
+
+    res.json({ message: 'Previous idea removed. You may now validate a new idea.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Submit idea (finalize)
 router.post('/submit', verifyToken, async (req, res) => {
   try {
@@ -106,8 +152,14 @@ router.post('/submit', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'You must be in a team to submit an idea' });
     }
 
-    // Create or update idea
+    // Find existing team idea if it exists
     let idea = await Idea.findOne({ submittedBy: req.user._id });
+    const teamIdea = await Idea.findOne({ team: user.team });
+
+    if (!idea && teamIdea) {
+      idea = teamIdea;
+    }
+
     if (!idea) {
       idea = new Idea({
         title,
@@ -123,6 +175,13 @@ router.post('/submit', verifyToken, async (req, res) => {
       });
       await idea.save();
     } else {
+      idea.title = title;
+      idea.description = description;
+      idea.problemStatement = problemStatement;
+      idea.techStack = techStack;
+      idea.targetUsers = targetUsers;
+      idea.validationScore = validationScore;
+      idea.isValidated = true;
       idea.isApproved = validationScore >= 75;
       await idea.save();
     }
@@ -143,7 +202,11 @@ router.post('/submit', verifyToken, async (req, res) => {
 router.get('/my-idea', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    const idea = await Idea.findOne({ submittedBy: req.user._id });
+    let idea = await Idea.findOne({ submittedBy: req.user._id });
+
+    if (!idea && user?.team) {
+      idea = await Idea.findOne({ team: user.team });
+    }
 
     if (!idea) {
       return res.status(404).json({ message: 'No idea found' });

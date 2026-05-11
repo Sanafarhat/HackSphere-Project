@@ -105,4 +105,30 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// Update user profile
+router.patch('/profile', verifyToken, async (req, res) => {
+  try {
+    const { openToNewMembers, bio, availability, skills } = req.body;
+    
+    const updateData = {};
+    if (openToNewMembers !== undefined) updateData.openToNewMembers = openToNewMembers;
+    if (bio !== undefined) updateData.bio = bio;
+    if (availability !== undefined) updateData.availability = availability;
+    if (skills !== undefined) updateData.skills = Array.isArray(skills) ? skills : skills?.split(',').map(s => s.trim()).filter(Boolean) || [];
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true }
+    );
+
+    res.json({
+      message: 'Profile updated successfully',
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

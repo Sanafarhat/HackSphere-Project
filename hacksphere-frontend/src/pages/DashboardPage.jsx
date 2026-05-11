@@ -13,6 +13,8 @@ export const DashboardPage = () => {
   const [idea, setIdea] = useState(null);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [alerts, setAlerts] = useState([]);
+  const [submittingMilestone, setSubmittingMilestone] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [resendingEmail, setResendingEmail] = useState(null); // tracks which email is resending
 
@@ -36,11 +38,13 @@ export const DashboardPage = () => {
           axios.get('/api/teams/my-team').catch(() => null),
           axios.get('/api/ideas/my-idea').catch(() => null),
           axios.get('/api/progress/my-progress').catch(() => null),
+          axios.get('/api/progress/alerts').catch(() => null),
         ]);
 
         setTeam(responses[0]?.data);
         setIdea(responses[1]?.data);
         setProgress(responses[2]?.data);
+        setAlerts(responses[3]?.data?.alerts || []);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
@@ -50,6 +54,29 @@ export const DashboardPage = () => {
 
     fetchDashboardData();
   }, []);
+
+  const handleToggleMilestone = async (key, currentValue) => {
+    if (!team || !user) return;
+    // Only leader allowed
+    if (team.leader?._id !== user._id) {
+      alert('Only the team leader can update progress');
+      return;
+    }
+
+    try {
+      setSubmittingMilestone(key);
+      const token = localStorage.getItem('token');
+      const res = await axios.patch('/api/progress/update', { [key]: !currentValue }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProgress(res.data);
+    } catch (err) {
+      console.error('Failed updating milestone', err);
+      alert(err.response?.data?.message || 'Failed to update milestone');
+    } finally {
+      setSubmittingMilestone(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -74,6 +101,11 @@ export const DashboardPage = () => {
           <p className="text-gray-300">
             {team ? "Your team is ready. Let's build something amazing!" : 'Complete your team setup to get started.'}
           </p>
+          {team && (
+            <p className="text-sm text-gray-400 mt-2">
+              Team: <span className="text-white font-semibold">{team.name}</span>
+            </p>
+          )}
         </div>
 
         {/* Tabs */}
@@ -165,6 +197,22 @@ export const DashboardPage = () => {
               </div>
             </div>
 
+            {idea && (
+              <div className="card">
+                <h2 className="text-xl font-bold text-white mb-4">Current Project</h2>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-400 uppercase tracking-wider mb-1">Project Title</p>
+                    <p className="text-lg font-semibold text-white">{idea.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400 uppercase tracking-wider mb-1">Refined Description</p>
+                    <p className="text-gray-300">{idea.description}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div className="card">
               <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
@@ -181,16 +229,69 @@ export const DashboardPage = () => {
                 )}
                 {idea && (
                   <>
-                    <button onClick={() => navigate('/idea-validator')} className="btn-secondary py-4">
+                    <button onClick={() => navigate('/validate-idea?revalidate=true')} className="btn-secondary py-4">
                       Revalidate Idea
                     </button>
                     <button onClick={() => navigate('/progress')} className="btn-secondary py-4">
                       Track Progress
                     </button>
+                    <button onClick={() => navigate('/leaderboard')} className="btn-secondary py-4">
+                      View Leaderboard
+                    </button>
+
+                    {/* Ready to Submit: show button, enabled only for leader + validated idea + >=4 members */}
+                    {team && (
+                      (() => {
+                        const isLeader = team.leader?._id === user?._id;
+                        const membersCount = team.members?.length || 0;
+                        const ideaValidated = !!(idea?.isValidated || idea?.validationScore || idea?.score);
+                        const canSubmit = isLeader && ideaValidated && membersCount >= 4;
+
+                        return (
+                          <button
+                            onClick={() => {
+                              if (!canSubmit) {
+                                const msgs = [];
+                                if (!isLeader) msgs.push('Only the team leader can submit the final project.');
+                                if (!ideaValidated) msgs.push('Idea not validated yet.');
+                                if (membersCount < 4) msgs.push('Team must have at least 4 members.');
+                                alert(msgs.join('\n'));
+                                return;
+                              }
+                              navigate('/submission');
+                            }}
+                            disabled={!canSubmit}
+                            className={`py-4 font-semibold rounded-lg transition-all ${canSubmit ? 'btn-primary' : 'bg-dark-700 text-gray-400 border border-dark-600 cursor-not-allowed'}`}
+                          >
+                            Ready to Submit
+                          </button>
+                        );
+                      })()
+                    )}
                   </>
                 )}
               </div>
             </div>
+
+            {/* Alerts */}
+            {alerts.length > 0 && (
+              <div className="card">
+                <h2 className="text-xl font-bold text-white mb-4">Alerts</h2>
+                <ul className="space-y-3">
+                  {alerts.map((a, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="mt-1 text-warning">
+                        <AlertCircle />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{a.message}</p>
+                        <p className="text-sm text-gray-400">Priority: {a.priority}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -346,6 +447,31 @@ export const DashboardPage = () => {
                     </button>
                   </div>
                 )}
+
+                {/* Open to New Members Toggle */}
+                {user?._id === team.leader?._id && team.members?.length === 4 && (
+                  <div className="mt-6 p-4 bg-dark-700 rounded-lg border border-primary-500/30 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-200">Open to New Members</p>
+                      <p className="text-xs text-gray-400 mt-1">Allow solo students to find and join your team as a 5th member</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={team.openToMembers || false}
+                      onChange={async (e) => {
+                        try {
+                          await axios.patch(`/api/teams/my-team`, {
+                            openToMembers: e.target.checked,
+                          });
+                          setTeam({ ...team, openToMembers: e.target.checked });
+                        } catch (error) {
+                          alert('Failed to update team settings');
+                        }
+                      }}
+                      className="w-5 h-5 accent-accent-500 cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="card text-center py-12">
@@ -477,14 +603,14 @@ export const DashboardPage = () => {
 
                 <div className="space-y-4">
                   {[
-                    { title: 'Idea Validated', completed: progress?.ideaValidated },
-                    { title: 'Repository Created', completed: progress?.repoCreated },
-                    { title: 'Prototype Started', completed: progress?.prototypeStarted },
-                    { title: 'Mid-Checkpoint Submitted', completed: progress?.midCheckpoint },
-                    { title: 'Final Submission', completed: progress?.finalSubmission },
+                    { key: 'ideaValidated', title: 'Idea Validated', completed: progress?.ideaValidated },
+                    { key: 'repoCreated', title: 'Repository Created', completed: progress?.repoCreated },
+                    { key: 'prototypeStarted', title: 'Prototype Started', completed: progress?.prototypeStarted },
+                    { key: 'midCheckpoint', title: 'Mid-Checkpoint Submitted', completed: progress?.midCheckpoint },
+                    { key: 'finalSubmission', title: 'Final Submission', completed: progress?.finalSubmission },
                   ].map((milestone, index) => (
                     <div
-                      key={index}
+                      key={milestone.key}
                       className="flex items-center gap-4 pb-4 border-b border-dark-600 last:border-b-0"
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -500,13 +626,24 @@ export const DashboardPage = () => {
                           {milestone.completed ? '✅ Completed' : '⏳ Pending'}
                         </p>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        milestone.completed
-                          ? 'bg-green-900 text-green-300'
-                          : 'bg-dark-700 text-gray-500'
-                      }`}>
-                        {index + 1}/5
-                      </span>
+                      <div className="flex items-center gap-3">
+                        {user?._id === team?.leader?._id && (
+                          <button
+                            onClick={() => handleToggleMilestone(milestone.key, !!milestone.completed)}
+                            disabled={submittingMilestone === milestone.key}
+                            className={`text-sm px-3 py-1 rounded-full font-semibold ${milestone.completed ? 'bg-red-700 text-red-200' : 'bg-accent-500 text-black'} transition-all disabled:opacity-50`}
+                          >
+                            {submittingMilestone === milestone.key ? 'Saving...' : (milestone.completed ? 'Revoke' : 'Mark Completed')}
+                          </button>
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          milestone.completed
+                            ? 'bg-green-900 text-green-300'
+                            : 'bg-dark-700 text-gray-500'
+                        }`}>
+                          {index + 1}/5
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

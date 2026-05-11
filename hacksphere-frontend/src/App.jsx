@@ -6,11 +6,17 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import PaymentPage from './pages/PaymentPage';
 import DashboardPage from './pages/DashboardPage';
 import FindTeamPage from './pages/FindTeamPage';
 import FindMembersPage from './pages/FindMembersPage';
+import RecommendedTeamsPage from './pages/RecommendedTeamsPage';
+import RecommendedMembersPage from './pages/RecommendedMembersPage';
 import IdeaValidatorPage from './pages/IdeaValidatorPage';
 import JoinPage from './pages/JoinPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import SubmissionPage from './pages/SubmissionPage';
+import ProjectGallery from './pages/ProjectGallery';
 import './styles/globals.css';
 
 function App() {
@@ -23,6 +29,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
           <Route path="/join" element={<JoinPage />} />
 
           {/* Protected Routes */}
@@ -43,10 +50,26 @@ function App() {
             }
           />
           <Route
+            path="/recommended-teams"
+            element={
+              <ProtectedRoute>
+                <RecommendedTeamsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/find-members"
             element={
               <ProtectedRoute>
                 <FindMembersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recommended-members"
+            element={
+              <ProtectedRoute>
+                <RecommendedMembersPage />
               </ProtectedRoute>
             }
           />
@@ -58,6 +81,24 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <LeaderboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/submission"
+            element={
+              <ProtectedRoute>
+                <SubmissionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/gallery" element={<ProjectGallery />} />
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" />} />
