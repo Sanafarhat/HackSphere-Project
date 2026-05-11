@@ -26,14 +26,31 @@ await connectDB();
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://hack-sphere-project-chi.vercel.app',
-    process.env.FRONTEND_URL,
-  ].filter(Boolean),
-  credentials: true,
-}));
+// CORS: allow explicit frontends and support requests without an Origin (curl, server-to-server)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://hack-sphere-project-chi.vercel.app',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use((req, res, next) => {
+  // Helpful debug log for CORS troubleshooting in deployment logs
+  console.log('Incoming Origin:', req.headers.origin);
+  next();
+});
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g., server-to-server, curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Not allowed — callback with null and false so CORS middleware doesn't set the header
+      return callback(new Error('CORS policy: origin not allowed'));
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
