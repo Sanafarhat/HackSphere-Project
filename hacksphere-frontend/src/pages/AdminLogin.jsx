@@ -73,14 +73,17 @@ const AdminLogin = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <button type="submit" disabled={loading} className="btn-primary flex-1">
-                {loading ? 'Signing in...' : 'Enter Admin Dashboard'}
+              <button type="submit" disabled={loading} className="btn-admin-login flex-1">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/80 shadow-[0_0_18px_rgba(255,255,255,0.6)]" />
+                  {loading ? 'Signing in...' : 'Enter Admin Dashboard'}
+                </span>
               </button>
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => handleAdminLogin('admin@hacksphere.dev', 'Admin@1234')}
-                className="px-5 py-3 rounded-xl border border-dark-600 text-gray-200 hover:bg-dark-700 transition disabled:opacity-50"
+                className="btn-admin-quick"
               >
                 Quick login
               </button>

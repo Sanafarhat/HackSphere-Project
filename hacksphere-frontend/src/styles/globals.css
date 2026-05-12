@@ -33,6 +33,35 @@
     @apply px-6 py-3 bg-accent-500 text-dark-900 font-semibold rounded-lg hover:bg-accent-600 transition-all duration-300 transform hover:scale-105 active:scale-95;
   }
 
+  .btn-admin-login {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white border border-white/10 shadow-lg shadow-accent-500/20 transition-all duration-300;
+    background: linear-gradient(135deg, rgba(177, 156, 255, 1) 0%, rgba(97, 76, 255, 1) 45%, rgba(18, 22, 55, 1) 100%);
+  }
+
+  .btn-admin-login:hover {
+    @apply -translate-y-0.5 shadow-xl shadow-accent-500/30;
+  }
+
+  .btn-admin-login:focus-visible {
+    @apply outline-none ring-2 ring-accent-300 ring-offset-2 ring-offset-dark-900;
+  }
+
+  .btn-admin-login:disabled {
+    @apply cursor-not-allowed opacity-60 transform-none shadow-none;
+  }
+
+  .btn-admin-quick {
+    @apply px-5 py-3 rounded-xl border border-dark-500 text-gray-100 bg-dark-800/70 backdrop-blur-sm font-semibold transition-all duration-300 hover:border-accent-400/60 hover:text-white hover:bg-dark-700/90;
+  }
+
+  .btn-admin-quick:focus-visible {
+    @apply outline-none ring-2 ring-accent-300 ring-offset-2 ring-offset-dark-900;
+  }
+
+  .btn-admin-quick:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
   .btn-secondary {
     @apply px-6 py-3 border border-accent-500 text-accent-500 font-semibold rounded-lg hover:bg-accent-500 hover:text-dark-900 transition-all duration-300;
   }
