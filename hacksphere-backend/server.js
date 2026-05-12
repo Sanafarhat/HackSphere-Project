@@ -34,7 +34,9 @@ const app = express();
 // Middleware
 // CORS: allow explicit frontends and support requests without an Origin (curl, server-to-server)
 const allowedOrigins = [
-  'http://localhost:5173',
+  ...(process.env.NODE_ENV === 'development'
+    ? ['http://localhost:5173', 'http://localhost:5174']
+    : []),
   'https://hack-sphere-project-chi.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
