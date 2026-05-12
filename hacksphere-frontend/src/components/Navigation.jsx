@@ -25,8 +25,8 @@ export const Navigation = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
     setIsOpen(false);
   };

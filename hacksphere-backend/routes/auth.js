@@ -123,7 +123,12 @@ router.get('/me', verifyToken, async (req, res) => {
 
 // Logout (clear httpOnly cookie)
 router.post('/logout', (req, res) => {
-  res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  });
   res.json({ message: 'Logged out' });
 });
 
