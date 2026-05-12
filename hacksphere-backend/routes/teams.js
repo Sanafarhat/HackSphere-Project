@@ -53,7 +53,6 @@ router.post('/create', verifyToken, async (req, res) => {
     }
 
     const leader = await User.findById(req.user._id);
-    const inviteLink = `${process.env.FRONTEND_URL}/join?token=${invite.token}`;
     if (!leader) {
       return res.status(404).json({ message: 'Leader not found' });
     }

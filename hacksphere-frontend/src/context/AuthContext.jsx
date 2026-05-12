@@ -58,12 +58,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    // clear cookie server-side if provided (best-effort)
+  const logout = async () => {
+    // clear server-side cookie/session first, then update client state
     try {
-      axios.post('/api/auth/logout').catch(() => {});
-    } catch {}
+      await axios.post('/api/auth/logout');
+    } catch (err) {
+      // ignore network errors but proceed to clear local state
+    }
+    setUser(null);
   };
 
   return (

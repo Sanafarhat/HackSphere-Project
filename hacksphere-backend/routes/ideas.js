@@ -234,7 +234,8 @@ router.get('/my-idea', verifyToken, async (req, res) => {
     }
 
     if (!idea) {
-      return res.status(404).json({ message: 'No idea found' });
+      // Return null to keep response shape consistent with /api/teams/my-team
+      return res.status(200).json(null);
     }
 
     res.json(idea);
