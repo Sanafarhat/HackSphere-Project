@@ -113,6 +113,27 @@
   .badge-danger {
     @apply inline-block px-3 py-1 bg-danger/20 border border-danger/30 text-danger text-xs font-semibold rounded-full;
   }
+
+  .journey-card {
+    @apply relative overflow-hidden rounded-3xl border border-dark-600 bg-dark-900/75 p-6 sm:p-7 shadow-lg shadow-black/20 backdrop-blur-xl transition-all duration-300;
+  }
+
+  .journey-card:hover {
+    @apply -translate-y-1 border-accent-400/50 shadow-2xl shadow-accent-500/10;
+  }
+
+  .journey-step-badge {
+    @apply flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-500 to-primary-600 text-dark-900 font-extrabold tracking-wide shadow-lg shadow-accent-500/20;
+  }
+
+  .journey-animate-in {
+    animation: journeyFadeRise 0.8s ease both;
+  }
+
+  .journey-progress {
+    width: 0%;
+    animation: journeyFill 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
 }
 
 /* Glassmorphism effect */
@@ -127,6 +148,26 @@
   background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
+}
+
+@keyframes journeyFadeRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes journeyFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
 }
 
 @keyframes gradientShift {

@@ -187,52 +187,78 @@ export const HomePage = () => {
       </section>
 
       {/* Journey Section */}
-      <section id="journey" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-dark-800/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-display font-bold mb-4">
-              <span className="text-white">Your</span>
+      <section id="journey" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-dark-800/50 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-16 left-1/4 h-56 w-56 rounded-full bg-accent-500/10 blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-primary-500/10 blur-3xl animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+          <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-accent-400/40 to-transparent journey-line"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-16 journey-animate-in">
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent-400/30 bg-dark-900/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-accent-200 mb-6">
+              <Sparkles size={14} />
+              Journey map
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-display font-bold mb-5">
+              <span className="text-white">Your HackSphere</span>
               <br />
-              <span className="gradient-accent">HackSphere Journey</span>
+              <span className="gradient-accent">Journey, Rebuilt</span>
             </h2>
+            <p className="text-gray-300 text-lg sm:text-xl leading-relaxed">
+              A cleaner path from discovery to judging, with each stage presented as a distinct milestone in the hackathon flow.
+            </p>
           </div>
 
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-primary-500 to-accent-500"></div>
-
-            <div className="space-y-12">
-              {timeline.map((item, index) => (
-                <div key={index} className={`flex gap-8 ${index % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
-                  {/* Timeline dot */}
-                  <div className="hidden lg:flex flex-1 justify-end">
-                    <div className="relative flex items-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-accent-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-primary-500/50">
-                        {index + 1}
-                      </div>
-                    </div>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {timeline.map((item, index) => (
+              <div
+                key={index}
+                className="journey-card journey-animate-in group"
+                style={{ animationDelay: `${index * 120}ms` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-accent-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative flex items-start gap-4">
+                  <div className="journey-step-badge flex-shrink-0">
+                    {String(index + 1).padStart(2, '0')}
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className="card">
-                      <h3 className="text-2xl font-bold text-accent-500 mb-2">
-                        {item.stage}
-                      </h3>
-                      <p className="text-gray-300">
-                        {item.description}
-                      </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="h-2 w-2 rounded-full bg-accent-400 shadow-[0_0_18px_rgba(177,156,255,0.8)]"></span>
+                      <span className="text-xs uppercase tracking-[0.28em] text-gray-400">Stage {index + 1}</span>
                     </div>
-                  </div>
-
-                  {/* Mobile timeline number */}
-                  <div className="lg:hidden">
-                    <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      {index + 1}
-                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3">
+                      {item.stage}
+                    </h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      {item.description}
+                    </p>
                   </div>
                 </div>
-              ))}
+
+                <div className="relative mt-6 h-1 overflow-hidden rounded-full bg-dark-700">
+                  <div
+                    className="journey-progress h-full rounded-full bg-gradient-to-r from-accent-400 via-primary-500 to-accent-500"
+                    style={{ animationDelay: `${index * 120 + 300}ms` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3 journey-animate-in" style={{ animationDelay: '900ms' }}>
+            <div className="rounded-2xl border border-dark-600 bg-dark-900/70 p-5 backdrop-blur-sm">
+              <p className="text-sm uppercase tracking-[0.28em] text-gray-400 mb-2">Flow</p>
+              <p className="text-white font-semibold">Linear progression with clear milestones</p>
+            </div>
+            <div className="rounded-2xl border border-dark-600 bg-dark-900/70 p-5 backdrop-blur-sm">
+              <p className="text-sm uppercase tracking-[0.28em] text-gray-400 mb-2">Focus</p>
+              <p className="text-white font-semibold">Less clutter, more readable state changes</p>
+            </div>
+            <div className="rounded-2xl border border-dark-600 bg-dark-900/70 p-5 backdrop-blur-sm">
+              <p className="text-sm uppercase tracking-[0.28em] text-gray-400 mb-2">Motion</p>
+              <p className="text-white font-semibold">Staggered reveal and progress bar animation</p>
             </div>
           </div>
         </div>
