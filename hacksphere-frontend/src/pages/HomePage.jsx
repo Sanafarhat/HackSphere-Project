@@ -211,38 +211,40 @@ export const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mx-auto max-w-4xl space-y-6 lg:space-y-8">
             {timeline.map((item, index) => (
               <div
                 key={index}
-                className="journey-card journey-animate-in group"
-                style={{ animationDelay: `${index * 120}ms` }}
+                className="journey-stack-item journey-animate-in group"
+                style={{ animationDelay: `${index * 120}ms`, zIndex: timeline.length - index }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-accent-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative flex items-start gap-4">
-                  <div className="journey-step-badge flex-shrink-0">
-                    {String(index + 1).padStart(2, '0')}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="h-2 w-2 rounded-full bg-accent-400 shadow-[0_0_18px_rgba(177,156,255,0.8)]"></span>
-                      <span className="text-xs uppercase tracking-[0.28em] text-gray-400">Stage {index + 1}</span>
+                <div className="journey-stack-card journey-card relative sticky top-24 overflow-hidden lg:top-28">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-accent-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                  <div className="relative flex items-start gap-4">
+                    <div className="journey-step-badge flex-shrink-0">
+                      {String(index + 1).padStart(2, '0')}
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-3">
-                      {item.stage}
-                    </h3>
-                    <p className="text-gray-300 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="relative mt-6 h-1 overflow-hidden rounded-full bg-dark-700">
-                  <div
-                    className="journey-progress h-full rounded-full bg-gradient-to-r from-accent-400 via-primary-500 to-accent-500"
-                    style={{ animationDelay: `${index * 120 + 300}ms` }}
-                  ></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="h-2 w-2 rounded-full bg-accent-400 shadow-[0_0_18px_rgba(177,156,255,0.8)]"></span>
+                        <span className="text-xs uppercase tracking-[0.28em] text-gray-400">Stage {index + 1}</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-3">
+                        {item.stage}
+                      </h3>
+                      <p className="text-gray-300 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="relative mt-6 h-1 overflow-hidden rounded-full bg-dark-700">
+                    <div
+                      className="journey-progress h-full rounded-full bg-gradient-to-r from-accent-400 via-primary-500 to-accent-500"
+                      style={{ animationDelay: `${index * 120 + 300}ms` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             ))}
