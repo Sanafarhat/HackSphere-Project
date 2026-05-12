@@ -144,7 +144,7 @@
   }
 
   .journey-stack-item:nth-child(even) .journey-stack-card {
-    transform: translateX(12px);
+    transform: translateX(8px);
   }
 
   .journey-stack-item:last-child .journey-stack-card {

@@ -216,7 +216,11 @@ export const HomePage = () => {
               <div
                 key={index}
                 className="journey-stack-item journey-animate-in group"
-                style={{ animationDelay: `${index * 120}ms`, zIndex: timeline.length - index }}
+                style={{
+                  animationDelay: `${index * 120}ms`,
+                  zIndex: timeline.length - index,
+                  marginTop: index === 0 ? 0 : '-5.5rem',
+                }}
               >
                 <div className="journey-stack-card journey-card relative sticky top-24 overflow-hidden lg:top-28">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-accent-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
