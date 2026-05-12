@@ -120,7 +120,7 @@ export const HomePage = () => {
               <span>Learn More</span>
               <ArrowRight size={20} />
             </button>
-            <Link to="/admin-login" className="btn-outline flex items-center justify-center space-x-2 text-lg">
+            <Link to="/admin-login" className="btn-admin-link flex items-center justify-center space-x-2 text-lg">
               <span>Admin Login</span>
             </Link>
           </div>
