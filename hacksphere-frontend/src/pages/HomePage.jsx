@@ -80,6 +80,7 @@ export const HomePage = () => {
     { stage: 'Building', description: 'Track progress with milestones and standups' },
     { stage: 'Submission', description: 'Submit your project before deadline' },
     { stage: 'Judging', description: 'Get evaluated on innovation and execution' },
+    { stage: 'Prize', description: 'Celebrate winners, badges, and project recognition in the gallery' },
   ];
 
   return (
@@ -247,20 +248,6 @@ export const HomePage = () => {
             ))}
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3 journey-animate-in" style={{ animationDelay: '900ms' }}>
-            <div className="rounded-2xl border border-dark-600 bg-dark-900/70 p-5 backdrop-blur-sm">
-              <p className="text-sm uppercase tracking-[0.28em] text-gray-400 mb-2">Flow</p>
-              <p className="text-white font-semibold">Linear progression with clear milestones</p>
-            </div>
-            <div className="rounded-2xl border border-dark-600 bg-dark-900/70 p-5 backdrop-blur-sm">
-              <p className="text-sm uppercase tracking-[0.28em] text-gray-400 mb-2">Focus</p>
-              <p className="text-white font-semibold">Less clutter, more readable state changes</p>
-            </div>
-            <div className="rounded-2xl border border-dark-600 bg-dark-900/70 p-5 backdrop-blur-sm">
-              <p className="text-sm uppercase tracking-[0.28em] text-gray-400 mb-2">Motion</p>
-              <p className="text-white font-semibold">Staggered reveal and progress bar animation</p>
-            </div>
-          </div>
         </div>
       </section>
 
