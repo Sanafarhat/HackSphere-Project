@@ -1,9 +1,15 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { verifyToken } from '../middleware/auth.js';
+import Event from '../models/Event.js';
+import { verifyToken, requirePlatformAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const getActiveEventId = async () => {
+  const activeEvent = await Event.findOne({ isActive: true }).select('_id');
+  return activeEvent?._id || null;
+};
 
 // Register
 router.post('/register', async (req, res) => {
@@ -16,15 +22,21 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    const activeEventId = await getActiveEventId();
+
+    // Public registration stays student-only. Organizer/platform admin accounts are created by platform admins.
+    const normalizedRole = role === 'student' ? 'student' : 'student';
+
     // Create user
     const user = new User({
       name,
       email,
       password,
-      role,
+      role: normalizedRole,
       department,
       year,
       skills: skills ? skills.split(',').map(s => s.trim()) : [],
+      event: activeEventId,
     });
 
     await user.save();
@@ -121,6 +133,52 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// Platform admin creates organizer/platform admin accounts
+router.post('/admin/users', verifyToken, requirePlatformAdmin, async (req, res) => {
+  try {
+    const { name, email, password, role = 'organizer', department, year, skills } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
+
+    const allowedRoles = ['student', 'organizer', 'platformAdmin'];
+    const normalizedRole = allowedRoles.includes(role) ? role : 'organizer';
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    const activeEventId = await getActiveEventId();
+
+    const user = new User({
+      name,
+      email,
+      password,
+      role: normalizedRole,
+      department,
+      year,
+      skills: Array.isArray(skills) ? skills : skills ? skills.split(',').map((skill) => skill.trim()) : [],
+      event: activeEventId,
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Logout (clear httpOnly cookie)
 router.post('/logout', (req, res) => {
   res.clearCookie('token', {
@@ -181,7 +239,7 @@ router.post('/seed-admin', async (req, res) => {
       return res.status(200).json({ message: 'Admin already exists', user: { email: existing.email, role: existing.role } });
     }
 
-    const admin = new User({ name: adminName, email: adminEmail, password: adminPassword, role: 'admin' });
+    const admin = new User({ name: adminName, email: adminEmail, password: adminPassword, role: 'platformAdmin' });
     await admin.save();
 
     res.status(201).json({ message: 'Admin user created', user: { email: admin.email, role: admin.role } });

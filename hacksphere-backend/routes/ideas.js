@@ -1,9 +1,11 @@
 import express from 'express';
 import Idea from '../models/Idea.js';
+import Event from '../models/Event.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import Progress from '../models/Progress.js';
 import { verifyToken, requireAdmin } from '../middleware/auth.js';
+import { requireEventPhase } from '../middleware/eventPhase.js';
 import { Groq } from 'groq-sdk';
 
 const router = express.Router();
@@ -18,8 +20,13 @@ const getGroqClient = () => {
   });
 };
 
+const getActiveEventId = async () => {
+  const activeEvent = await Event.findOne({ isActive: true }).select('_id');
+  return activeEvent?._id || null;
+};
+
 // Validate idea with AI
-router.post('/validate', verifyToken, async (req, res) => {
+router.post('/validate', verifyToken, requireEventPhase(['registration', 'hacking'], { bypassRoles: ['platformAdmin'] }), async (req, res) => {
   try {
     const { title, description, problemStatement, techStack, targetUsers } = req.body;
     const groq = getGroqClient();
@@ -38,18 +45,20 @@ router.post('/validate', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Only the team leader can validate this idea' });
     }
 
+    const activeEventId = team.event || (await getActiveEventId());
+
     // Create prompt for Groq
     const prompt = `You are an experienced hackathon judge and technical reviewer. Evaluate the idea honestly and directly without sugarcoating. Identify major strengths, weaknesses, risks, and practical concerns.
 
 Respond in clear, professional language and provide realistic, actionable guidance. Do not use vague praise or softening words. Be precise, candid, and grounded in real hackathon constraints.
 
-Return the response only in valid JSON format with this structure:
+Return the response only in valid JSON format with this structure. ALL scores must be numbers strictly between 0 and 100 (e.g., 85, 92, 45, etc):
 {
-  "score": number,
-  "feasibilityScore": number,
-  "originalityScore": number,
-  "impactScore": number,
-  "scopeScore": number,
+  "score": number (0-100),
+  "feasibilityScore": number (0-100),
+  "originalityScore": number (0-100),
+  "impactScore": number (0-100),
+  "scopeScore": number (0-100),
   "feedback": "string",
   "suggestions": ["string", "string", "string"]
 }
@@ -63,7 +72,7 @@ Target Users: ${targetUsers}
 `;
 
     const message = await groq.chat.completions.create({
-  model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  model: process.env.GROQ_MODEL || 'qwen/qwen3.8-27b',
   max_tokens: 1000,
   messages: [
     {
@@ -88,6 +97,7 @@ let responseText = message.choices[0]?.message?.content || '';
       targetUsers,
       submittedBy: req.user._id,
       team: team._id,
+      event: activeEventId,
       validationScore: validationData.score || 0,
       feasibilityScore: validationData.feasibilityScore || 0,
       originalityScore: validationData.originalityScore || 0,
@@ -110,9 +120,13 @@ let responseText = message.choices[0]?.message?.content || '';
       progress = new Progress({
         team: team._id,
         ideaValidated: true,
+        event: activeEventId,
       });
     } else {
       progress.ideaValidated = true;
+      if (!progress.event && activeEventId) {
+        progress.event = activeEventId;
+      }
     }
     await progress.save();
 
@@ -135,7 +149,7 @@ let responseText = message.choices[0]?.message?.content || '';
 });
 
 // Revalidate idea: remove previous idea and allow a fresh validation
-router.post('/revalidate', verifyToken, async (req, res) => {
+router.post('/revalidate', verifyToken, requireEventPhase(['registration', 'hacking'], { bypassRoles: ['platformAdmin'] }), async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user?.team) {
@@ -160,7 +174,7 @@ router.post('/revalidate', verifyToken, async (req, res) => {
 });
 
 // Submit idea (finalize)
-router.post('/submit', verifyToken, async (req, res) => {
+router.post('/submit', verifyToken, requireEventPhase(['registration', 'hacking'], { bypassRoles: ['platformAdmin'] }), async (req, res) => {
   try {
     const { title, description, problemStatement, techStack, targetUsers, validationScore } = req.body;
 
@@ -169,6 +183,8 @@ router.post('/submit', verifyToken, async (req, res) => {
     if (!user.team) {
       return res.status(400).json({ message: 'You must be in a team to submit an idea' });
     }
+
+    const activeEventId = user.event || (await getActiveEventId());
 
     // Find existing team idea if it exists
     let idea = await Idea.findOne({ submittedBy: req.user._id });
@@ -187,6 +203,7 @@ router.post('/submit', verifyToken, async (req, res) => {
         targetUsers,
         submittedBy: req.user._id,
         team: user.team,
+        event: activeEventId,
         validationScore,
         isValidated: true,
         isApproved: validationScore >= 75, // Auto-approve if score >= 75
@@ -201,6 +218,9 @@ router.post('/submit', verifyToken, async (req, res) => {
       idea.validationScore = validationScore;
       idea.isValidated = true;
       idea.isApproved = validationScore >= 75;
+      if (!idea.event && activeEventId) {
+        idea.event = activeEventId;
+      }
       await idea.save();
     }
 
@@ -227,10 +247,10 @@ router.get('/my-idea', verifyToken, async (req, res) => {
   });
   try {
     const user = await User.findById(req.user._id);
-    let idea = await Idea.findOne({ submittedBy: req.user._id });
+    let idea = await Idea.findOne({ submittedBy: req.user._id, ...(user?.event ? { event: user.event } : {}) });
 
     if (!idea && user?.team) {
-      idea = await Idea.findOne({ team: user.team });
+      idea = await Idea.findOne({ team: user.team, ...(user?.event ? { event: user.event } : {}) });
     }
 
     if (!idea) {

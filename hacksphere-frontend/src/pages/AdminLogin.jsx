@@ -24,13 +24,13 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-950 via-dark-900 to-dark-800 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-5xl grid lg:grid-cols-[1.15fr_0.85fr] gap-6">
-        <div className="glass rounded-3xl border border-dark-600 p-8 sm:p-10">
-          <p className="text-sm uppercase tracking-[0.3em] text-accent-400 mb-3">Admin Access</p>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Admin control center sign-in</h1>
-          <p className="text-gray-300 mb-8 max-w-2xl">
-            Sign in with your admin credentials. Default seeded account: <code className="text-accent-400">admin@hacksphere.dev</code>
+        <div className="editorial-card">
+          <p className="text-sm uppercase tracking-[0.3em] text-accent font-bold mb-3">Admin Access</p>
+          <h1 className="text-3xl sm:text-4xl font-display font-black text-foreground uppercase mb-4">Admin control center sign-in</h1>
+          <p className="text-mutedForeground font-semibold mb-8 max-w-2xl">
+            Sign in with your admin credentials. Default seeded account: <code className="text-accent font-bold">admin@hacksphere.dev</code>
           </p>
 
           {error && (
@@ -47,7 +47,7 @@ const AdminLogin = () => {
             }}
           >
             <div>
-              <label className="block text-sm font-semibold text-gray-200 mb-2">Admin email</label>
+              <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">Admin email</label>
               <input
                 type="email"
                 value={email}
@@ -60,7 +60,7 @@ const AdminLogin = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-200 mb-2">Password</label>
+              <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">Password</label>
               <input
                 type="password"
                 value={password}
@@ -91,28 +91,28 @@ const AdminLogin = () => {
           </form>
         </div>
 
-        <div className="glass rounded-3xl border border-dark-600 p-8 sm:p-10 bg-dark-900/60">
-          <h2 className="text-xl font-bold text-white mb-4">Direct paths</h2>
-          <div className="space-y-4 text-gray-300">
-            <div className="rounded-2xl border border-dark-600 p-4 bg-dark-800/60">
-              <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Login page</p>
-              <p className="font-semibold text-white mb-2">/admin-login</p>
-              <p className="text-sm">Open this page to sign in as an admin.</p>
+        <div className="editorial-card border-none bg-light-800">
+          <h2 className="text-xl font-black font-display uppercase text-foreground mb-4">Direct paths</h2>
+          <div className="space-y-4 text-mutedForeground">
+            <div className="border-2 border-foreground bg-white p-4">
+              <p className="text-sm font-bold uppercase tracking-wider text-mutedForeground mb-2">Login page</p>
+              <p className="font-black text-foreground mb-2">/admin-login</p>
+              <p className="text-sm font-semibold">Open this page to sign in as an admin.</p>
             </div>
-            <div className="rounded-2xl border border-dark-600 p-4 bg-dark-800/60">
-              <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Dashboard</p>
-              <p className="font-semibold text-white mb-2">/admin</p>
-              <p className="text-sm">Available after an admin session is established.</p>
+            <div className="border-2 border-foreground bg-white p-4">
+              <p className="text-sm font-bold uppercase tracking-wider text-mutedForeground mb-2">Dashboard</p>
+              <p className="font-black text-foreground mb-2">/admin</p>
+              <p className="text-sm font-semibold">Available after an admin session is established.</p>
             </div>
-            <div className="rounded-2xl border border-dark-600 p-4 bg-dark-800/60">
-              <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Note</p>
-              <p className="text-sm">
+            <div className="border-2 border-foreground bg-white p-4">
+              <p className="text-sm font-bold uppercase tracking-wider text-mutedForeground mb-2">Note</p>
+              <p className="text-sm font-semibold">
                 This flow is intended for local development and seeded admin credentials only.
               </p>
             </div>
           </div>
           <div className="mt-8">
-            <Link to="/" className="text-sm text-accent-400 hover:text-accent-300 font-semibold">
+            <Link to="/" className="text-sm text-accent hover:text-accent-hover font-black uppercase tracking-wider">
               ← Back to home
             </Link>
           </div>

@@ -32,11 +32,30 @@ export const AdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
-  const events = [
-    { id: 'ev-1', name: 'HackSphere 2026 Main Event', phase: 'Live', registrations: 148, teams: 42, status: 'active' },
-    { id: 'ev-2', name: 'Mentor Office Hours', phase: 'Scheduling', registrations: 18, teams: 0, status: 'draft' },
-    { id: 'ev-3', name: 'Final Demo Day', phase: 'Queued', registrations: 0, teams: 24, status: 'planned' },
-  ];
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    primaryColor: '#06b6d4',
+    secondaryColor: '#7c3aed',
+    registrationStart: '',
+    hackingStart: '',
+    submissionDeadline: '',
+  });
+
+  const fetchEvents = async () => {
+    try {
+      setEventsLoading(true);
+      const res = await axios.get('/api/events').catch(() => ({ data: [] }));
+      setEvents(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch events', err);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
 
   const registrations = [
     { id: 'reg-1', name: 'Aarav Mehta', track: 'Build', status: 'approved', timestamp: '2m ago' },
@@ -62,9 +81,9 @@ export const AdminPage = () => {
     { name: 'Publish results', detail: 'Lock results and notify teams' },
   ];
 
-  // Redirect if not admin
+  // Redirect if not platform admin (keep legacy admin compatibility)
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (user && !['admin', 'platformAdmin'].includes(user.role)) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
@@ -106,7 +125,52 @@ export const AdminPage = () => {
     };
 
     fetchAdminData();
+    fetchEvents();
   }, []);
+
+  const handleFormChange = (key, value) => setForm((s) => ({ ...s, [key]: value }));
+
+  const handleCreateEvent = async () => {
+    try {
+      setEventsLoading(true);
+      const payload = {
+        title: form.title,
+        description: form.description,
+        primaryColor: form.primaryColor,
+        secondaryColor: form.secondaryColor,
+        registrationStart: form.registrationStart || null,
+        hackingStart: form.hackingStart || null,
+        submissionDeadline: form.submissionDeadline || null,
+      };
+      await axios.post('/api/events', payload);
+      setShowCreate(false);
+      setForm({ title: '', description: '', primaryColor: '#06b6d4', secondaryColor: '#7c3aed', registrationStart: '', hackingStart: '', submissionDeadline: '' });
+      await fetchEvents();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create event');
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const handleActivateEvent = async (eventId) => {
+    if (!window.confirm('Activate this event and deactivate others?')) return;
+    try {
+      await axios.post(`/api/events/${eventId}/activate`);
+      await fetchEvents();
+    } catch (err) {
+      alert('Failed to activate event');
+    }
+  };
+
+  const handleUpdateEvent = async (eventId, patch) => {
+    try {
+      await axios.patch(`/api/events/${eventId}`, patch);
+      await fetchEvents();
+    } catch (err) {
+      alert('Failed to update event');
+    }
+  };
 
   const totalRegistrations = registrations.length + (stats?.totalTeams || 0);
   const totalJudges = judges.length;
@@ -169,7 +233,7 @@ export const AdminPage = () => {
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-accent-500 mx-auto mb-4"></div>
-            <p className="text-gray-300">Loading admin control center...</p>
+            <p className="text-mutedForeground">Loading admin control center...</p>
           </div>
         </div>
       );
@@ -179,34 +243,34 @@ export const AdminPage = () => {
       return (
         <div className="space-y-6">
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="card">
-              <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Active events</p>
-              <h3 className="text-3xl font-bold text-white">{activeEvents}</h3>
-              <p className="text-sm text-gray-400 mt-2">Event lifecycle visibility</p>
+            <div className="editorial-card">
+              <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Active events</p>
+              <h3 className="text-3xl font-bold text-foreground">{activeEvents}</h3>
+              <p className="text-sm text-mutedForeground mt-2">Event lifecycle visibility</p>
             </div>
-            <div className="card">
-              <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Registrations</p>
-              <h3 className="text-3xl font-bold text-white">{totalRegistrations}</h3>
-              <p className="text-sm text-gray-400 mt-2">Intake across cohorts</p>
+            <div className="editorial-card">
+              <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Registrations</p>
+              <h3 className="text-3xl font-bold text-foreground">{totalRegistrations}</h3>
+              <p className="text-sm text-mutedForeground mt-2">Intake across cohorts</p>
             </div>
-            <div className="card">
-              <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Judges</p>
-              <h3 className="text-3xl font-bold text-white">{totalJudges}</h3>
-              <p className="text-sm text-gray-400 mt-2">Assigned and available reviewers</p>
+            <div className="editorial-card">
+              <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Judges</p>
+              <h3 className="text-3xl font-bold text-foreground">{totalJudges}</h3>
+              <p className="text-sm text-mutedForeground mt-2">Assigned and available reviewers</p>
             </div>
-            <div className="card">
-              <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Accepted results</p>
-              <h3 className="text-3xl font-bold text-white">{acceptedSubmissions}</h3>
-              <p className="text-sm text-gray-400 mt-2">Published outcomes</p>
+            <div className="editorial-card">
+              <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Accepted results</p>
+              <h3 className="text-3xl font-bold text-foreground">{acceptedSubmissions}</h3>
+              <p className="text-sm text-mutedForeground mt-2">Published outcomes</p>
             </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            <div className="card lg:col-span-2">
+            <div className="editorial-card lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm uppercase tracking-wider text-gray-400">Operational priorities</p>
-                  <h2 className="text-2xl font-bold text-white">Control center status</h2>
+                  <p className="text-sm uppercase tracking-wider text-mutedForeground">Operational priorities</p>
+                  <h2 className="text-2xl font-bold text-foreground">Control center status</h2>
                 </div>
                 <ShieldCheck className="text-accent-500" size={28} />
               </div>
@@ -217,30 +281,30 @@ export const AdminPage = () => {
                     <button
                       key={section.id}
                       onClick={() => setActiveTab(section.id)}
-                      className="text-left rounded-2xl border border-dark-600 bg-dark-800/60 p-4 hover:border-accent-500/60 hover:bg-dark-700/60 transition"
+                      className="text-left rounded-2xl border border-foreground/10 bg-white p-4 hover:border-accent-500/60 hover:bg-light-800 border-2 border-foreground/10 transition"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <Icon className="text-accent-400" size={22} />
                         <Plus className="text-gray-500" size={18} />
                       </div>
-                      <h3 className="text-white font-semibold mb-1">{section.label}</h3>
-                      <p className="text-sm text-gray-400">Open the {section.label.toLowerCase()} workspace</p>
+                      <h3 className="text-foreground font-semibold mb-1">{section.label}</h3>
+                      <p className="text-sm text-mutedForeground">Open the {section.label.toLowerCase()} workspace</p>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="card">
+            <div className="editorial-card">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white">Fast workflow</h2>
+                <h2 className="text-lg font-bold text-foreground">Fast workflow</h2>
                 <Sparkles className="text-warning" size={22} />
               </div>
-              <div className="space-y-3 text-sm text-gray-300">
-                <div className="rounded-xl bg-dark-800/70 p-3">1. Review live event state</div>
-                <div className="rounded-xl bg-dark-800/70 p-3">2. Triage registrations and teams</div>
-                <div className="rounded-xl bg-dark-800/70 p-3">3. Assign judges and evaluate submissions</div>
-                <div className="rounded-xl bg-dark-800/70 p-3">4. Publish results and announcements</div>
+              <div className="space-y-3 text-sm text-mutedForeground">
+                <div className="rounded-xl bg-white border border-foreground/10/70 p-3">1. Review live event state</div>
+                <div className="rounded-xl bg-white border border-foreground/10/70 p-3">2. Triage registrations and teams</div>
+                <div className="rounded-xl bg-white border border-foreground/10/70 p-3">3. Assign judges and evaluate submissions</div>
+                <div className="rounded-xl bg-white border border-foreground/10/70 p-3">4. Publish results and announcements</div>
               </div>
             </div>
           </div>
@@ -251,25 +315,81 @@ export const AdminPage = () => {
     if (activeTab === 'events') {
       return (
         <div className="space-y-4">
-          {events.map((event) => (
-            <div key={event.id} className="card">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-foreground">Events</h2>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCreate((s) => !s)} className="btn-primary inline-flex items-center gap-2">
+                <Plus size={16} /> {showCreate ? 'Close' : 'Create event'}
+              </button>
+            </div>
+          </div>
+
+          {showCreate && (
+            <div className="editorial-card">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-white">{event.name}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${event.status === 'active' ? 'bg-green-900 text-green-300' : event.status === 'planned' ? 'bg-blue-900 text-blue-300' : 'bg-yellow-900 text-yellow-300'}`}>
-                      {event.phase}
-                    </span>
-                  </div>
-                  <p className="text-gray-400">Registrations {event.registrations} | Teams {event.teams}</p>
+                  <label className="block text-sm text-mutedForeground mb-1">Event Title</label>
+                  <input value={form.title} onChange={(e) => handleFormChange('title', e.target.value)} placeholder="E.g. Spring Hackathon 2026" className="input-field" />
                 </div>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 rounded-lg bg-dark-700 text-gray-200 hover:bg-dark-600 transition">Edit</button>
-                  <button className="px-4 py-2 rounded-lg bg-accent-700 text-white hover:bg-accent-600 transition">Publish</button>
+                <div>
+                  <label className="block text-sm text-mutedForeground mb-1">Primary Color</label>
+                  <input value={form.primaryColor} onChange={(e) => handleFormChange('primaryColor', e.target.value)} type="color" className="w-full h-[52px] p-1 border-2 border-foreground" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm text-mutedForeground mb-1">Short Description</label>
+                  <textarea value={form.description} onChange={(e) => handleFormChange('description', e.target.value)} placeholder="Description..." className="textarea-field" />
+                </div>
+                <div>
+                  <label className="block text-sm text-mutedForeground mb-1">Registration Start Date</label>
+                  <input value={form.registrationStart} onChange={(e) => handleFormChange('registrationStart', e.target.value)} type="datetime-local" className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm text-mutedForeground mb-1">Hacking Start Date</label>
+                  <input value={form.hackingStart} onChange={(e) => handleFormChange('hackingStart', e.target.value)} type="datetime-local" className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm text-mutedForeground mb-1">Submission Deadline</label>
+                  <input value={form.submissionDeadline} onChange={(e) => handleFormChange('submissionDeadline', e.target.value)} type="datetime-local" className="input-field" />
+                </div>
+                <div className="flex items-end">
+                  <p className="text-sm text-mutedForeground mb-2">Note: All dates are required to create an event.</p>
+                </div>
+                <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+                  <button onClick={() => setShowCreate(false)} className="btn-outline !py-3">Cancel</button>
+                  <button onClick={handleCreateEvent} disabled={eventsLoading} className="btn-primary !py-3">Create Event</button>
                 </div>
               </div>
             </div>
-          ))}
+          )}
+
+          {eventsLoading ? (
+            <div className="editorial-card text-center py-8">Loading events...</div>
+          ) : events.length === 0 ? (
+            <div className="editorial-card text-center py-12">No events found</div>
+          ) : (
+            events.map((event) => (
+              <div key={event._id || event.id} className="editorial-card">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-xl font-bold text-foreground">{event.title || event.name}</h3>
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${event.isActive || event.status === 'active' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
+                        {event.currentPhase || event.phase || (event.isActive ? 'Active' : 'Draft')}
+                      </span>
+                    </div>
+                    {event.description && <p className="text-mutedForeground">{event.description}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={async () => {
+                      const newTitle = window.prompt('Edit event title', event.title || event.name);
+                      if (newTitle) await handleUpdateEvent(event._id || event.id, { title: newTitle });
+                    }} className="px-4 py-2 rounded-lg bg-light-800 text-gray-200 hover:bg-dark-600 transition">Edit</button>
+                    <button onClick={() => handleActivateEvent(event._id || event.id)} className="px-4 py-2 rounded-lg bg-accent-700 text-foreground hover:bg-accent-600 transition">{(event.isActive || event.status === 'active') ? 'Active' : 'Activate'}</button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       );
     }
@@ -278,10 +398,10 @@ export const AdminPage = () => {
       return (
         <div className="space-y-4">
           {registrations.map((registration) => (
-            <div key={registration.id} className="card flex items-center justify-between gap-4">
+            <div key={registration.id} className="editorial-card flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-white font-semibold">{registration.name}</h3>
-                <p className="text-sm text-gray-400">Track: {registration.track} | {registration.timestamp}</p>
+                <h3 className="text-foreground font-semibold">{registration.name}</h3>
+                <p className="text-sm text-mutedForeground">Track: {registration.track} | {registration.timestamp}</p>
               </div>
               <span className={`text-xs px-3 py-1 rounded-full font-semibold ${registration.status === 'approved' ? 'bg-green-900 text-green-300' : registration.status === 'pending' ? 'bg-yellow-900 text-yellow-300' : 'bg-blue-900 text-blue-300'}`}>
                 {registration.status}
@@ -296,24 +416,24 @@ export const AdminPage = () => {
       return (
         <div className="space-y-4">
           {teams.length === 0 ? (
-            <div className="card text-center py-12">
-              <Users size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-300">No teams found</p>
+            <div className="editorial-card text-center py-12">
+              <Users size={48} className="mx-auto text-mutedForeground mb-4" />
+              <p className="text-mutedForeground">No teams found</p>
             </div>
           ) : (
             teams.map((team) => (
-              <div key={team._id} className="card">
+              <div key={team._id} className="editorial-card">
                 <div className="flex items-start justify-between gap-6">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2">{team.name}</h3>
-                    {team.description && <p className="text-gray-400 mb-3">{team.description}</p>}
+                    <h3 className="text-xl font-bold text-foreground mb-2">{team.name}</h3>
+                    {team.description && <p className="text-mutedForeground mb-3">{team.description}</p>}
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-xs bg-dark-700 text-gray-300 px-2 py-1 rounded">👥 {team.members?.length}/{team.maxMembers} members</span>
-                      <span className="text-xs bg-dark-700 text-gray-300 px-2 py-1 rounded">Lead: {team.leader?.name || 'Unknown'}</span>
+                      <span className="text-xs bg-light-800 text-mutedForeground px-2 py-1 rounded">👥 {team.members?.length}/{team.maxMembers} members</span>
+                      <span className="text-xs bg-light-800 text-mutedForeground px-2 py-1 rounded">Lead: {team.leader?.name || 'Unknown'}</span>
                       {team.idea && <span className="text-xs bg-accent-900 text-accent-300 px-2 py-1 rounded">Idea: {team.idea.title}</span>}
                     </div>
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full font-semibold ${team.openToMembers ? 'bg-green-900 text-green-300' : 'bg-dark-700 text-gray-400'}`}>
+                  <span className={`text-xs px-3 py-1 rounded-full font-semibold ${team.openToMembers ? 'bg-green-900 text-green-300' : 'bg-light-800 text-mutedForeground'}`}>
                     {team.openToMembers ? 'Open' : 'Closed'}
                   </span>
                 </div>
@@ -328,10 +448,10 @@ export const AdminPage = () => {
       return (
         <div className="space-y-4">
           {judges.map((judge) => (
-            <div key={judge.id} className="card flex items-center justify-between gap-4">
+            <div key={judge.id} className="editorial-card flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-white font-semibold">{judge.name}</h3>
-                <p className="text-sm text-gray-400">{judge.specialty}</p>
+                <h3 className="text-foreground font-semibold">{judge.name}</h3>
+                <p className="text-sm text-mutedForeground">{judge.specialty}</p>
               </div>
               <span className="text-xs px-3 py-1 rounded-full font-semibold bg-blue-900 text-blue-300">{judge.availability}</span>
             </div>
@@ -344,32 +464,32 @@ export const AdminPage = () => {
       return (
         <div className="space-y-4">
           {submissions.length === 0 ? (
-            <div className="card text-center py-12">
-              <FileCheck size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-300">No submissions found</p>
+            <div className="editorial-card text-center py-12">
+              <FileCheck size={48} className="mx-auto text-mutedForeground mb-4" />
+              <p className="text-mutedForeground">No submissions found</p>
             </div>
           ) : (
             submissions.map((submission) => (
-              <div key={submission._id} className="card">
+              <div key={submission._id} className="editorial-card">
                 <div className="flex items-start justify-between gap-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-white">{submission.title}</h3>
+                      <h3 className="text-xl font-bold text-foreground">{submission.title}</h3>
                       <span className={`text-xs px-2 py-1 rounded-full font-semibold ${submission.status === 'accepted' ? 'bg-green-900 text-green-300' : submission.status === 'rejected' ? 'bg-red-900 text-red-300' : 'bg-blue-900 text-blue-300'}`}>
                         {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
                       </span>
                     </div>
-                    <p className="text-gray-400 mb-3">{submission.description}</p>
+                    <p className="text-mutedForeground mb-3">{submission.description}</p>
                     <div className="flex flex-wrap gap-2">
-                      <a href={submission.githubUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-dark-700 text-accent-400 px-2 py-1 rounded hover:text-accent-300">
+                      <a href={submission.githubUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-light-800 text-accent-400 px-2 py-1 rounded hover:text-accent-300">
                         📦 GitHub
                       </a>
                       {submission.demoUrl && (
-                        <a href={submission.demoUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-dark-700 text-accent-400 px-2 py-1 rounded hover:text-accent-300">
+                        <a href={submission.demoUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-light-800 text-accent-400 px-2 py-1 rounded hover:text-accent-300">
                           🌐 Demo
                         </a>
                       )}
-                      <span className="text-xs bg-dark-700 text-gray-300 px-2 py-1 rounded">Team: {submission.team?.name || 'Unknown'}</span>
+                      <span className="text-xs bg-light-800 text-mutedForeground px-2 py-1 rounded">Team: {submission.team?.name || 'Unknown'}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -400,12 +520,12 @@ export const AdminPage = () => {
       return (
         <div className="grid lg:grid-cols-2 gap-4">
           {evaluationStages.map((stage) => (
-            <div key={stage.name} className="card">
+            <div key={stage.name} className="editorial-card">
               <div className="flex items-center gap-3 mb-3">
                 <Sparkles className="text-accent-400" size={20} />
-                <h3 className="text-white font-semibold">{stage.name}</h3>
+                <h3 className="text-foreground font-semibold">{stage.name}</h3>
               </div>
-              <p className="text-gray-400 text-sm">{stage.detail}</p>
+              <p className="text-mutedForeground text-sm">{stage.detail}</p>
             </div>
           ))}
         </div>
@@ -415,17 +535,17 @@ export const AdminPage = () => {
     if (activeTab === 'results') {
       return (
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="card">
-            <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Accepted</p>
-            <h3 className="text-3xl font-bold text-white">{stats?.acceptedProjects || 0}</h3>
+          <div className="editorial-card">
+            <p className="text-sm uppercase tracking-wider text-mutedForeground mb-2">Accepted</p>
+            <h3 className="text-3xl font-bold text-foreground">{stats?.acceptedProjects || 0}</h3>
           </div>
-          <div className="card">
-            <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Submitted</p>
-            <h3 className="text-3xl font-bold text-white">{stats?.submittedProjects || 0}</h3>
+          <div className="editorial-card">
+            <p className="text-sm uppercase tracking-wider text-mutedForeground mb-2">Submitted</p>
+            <h3 className="text-3xl font-bold text-foreground">{stats?.submittedProjects || 0}</h3>
           </div>
-          <div className="card">
-            <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Pending review</p>
-            <h3 className="text-3xl font-bold text-white">{stats?.pendingReview || 0}</h3>
+          <div className="editorial-card">
+            <p className="text-sm uppercase tracking-wider text-mutedForeground mb-2">Pending review</p>
+            <h3 className="text-3xl font-bold text-foreground">{stats?.pendingReview || 0}</h3>
           </div>
         </div>
       );
@@ -435,10 +555,10 @@ export const AdminPage = () => {
       return (
         <div className="space-y-4">
           {announcements.map((announcement) => (
-            <div key={announcement.id} className="card flex items-center justify-between gap-4">
+            <div key={announcement.id} className="editorial-card flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-white font-semibold">{announcement.title}</h3>
-                <p className="text-sm text-gray-400">Audience: {announcement.audience}</p>
+                <h3 className="text-foreground font-semibold">{announcement.title}</h3>
+                <p className="text-sm text-mutedForeground">Audience: {announcement.audience}</p>
               </div>
               <span className={`text-xs px-3 py-1 rounded-full font-semibold ${announcement.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}>
                 {announcement.status}
@@ -452,20 +572,20 @@ export const AdminPage = () => {
     if (activeTab === 'analytics') {
       return (
         <div className="grid lg:grid-cols-3 gap-4">
-          <div className="card">
-            <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Ideas tracked</p>
-            <h3 className="text-3xl font-bold text-white">{stats?.totalIdeas || 0}</h3>
+          <div className="editorial-card">
+            <p className="text-sm uppercase tracking-wider text-mutedForeground mb-2">Ideas tracked</p>
+            <h3 className="text-3xl font-bold text-foreground">{stats?.totalIdeas || 0}</h3>
             <p className="text-sm text-green-400 mt-2">{stats?.approvedIdeas || 0} approved</p>
           </div>
-          <div className="card">
-            <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Teams onboarded</p>
-            <h3 className="text-3xl font-bold text-white">{stats?.totalTeams || 0}</h3>
-            <p className="text-sm text-gray-400 mt-2">Operational team count</p>
+          <div className="editorial-card">
+            <p className="text-sm uppercase tracking-wider text-mutedForeground mb-2">Teams onboarded</p>
+            <h3 className="text-3xl font-bold text-foreground">{stats?.totalTeams || 0}</h3>
+            <p className="text-sm text-mutedForeground mt-2">Operational team count</p>
           </div>
-          <div className="card">
-            <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Submission throughput</p>
-            <h3 className="text-3xl font-bold text-white">{stats?.totalSubmissions || 0}</h3>
-            <p className="text-sm text-gray-400 mt-2">Acceptance and review pipeline</p>
+          <div className="editorial-card">
+            <p className="text-sm uppercase tracking-wider text-mutedForeground mb-2">Submission throughput</p>
+            <h3 className="text-3xl font-bold text-foreground">{stats?.totalSubmissions || 0}</h3>
+            <p className="text-sm text-mutedForeground mt-2">Acceptance and review pipeline</p>
           </div>
         </div>
       );
@@ -475,24 +595,24 @@ export const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-950 via-dark-900 to-dark-950 pt-24 pb-12">
+    <div className="min-h-screen bg-background pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-accent-400 mb-2">Admin control center</p>
-              <h1 className="text-4xl font-display font-bold mb-3 text-white">
+              <h1 className="text-4xl font-display font-bold mb-3 text-foreground">
                 Operational <span className="gradient-accent">Dashboard</span>
               </h1>
-              <p className="text-gray-300 max-w-3xl">
+              <p className="text-mutedForeground max-w-3xl">
                 Manage events, registrations, teams, judges, submissions, evaluation workflows, results, announcements, and platform analytics from one secure workspace.
               </p>
             </div>
             <div className="flex gap-3">
-              <button className="btn-primary inline-flex items-center gap-2">
+              <button onClick={() => { setActiveTab('events'); setShowCreate(true); }} className="btn-primary inline-flex items-center gap-2">
                 <Plus size={18} /> Create event
               </button>
-              <button className="px-5 py-3 rounded-xl border border-dark-600 text-gray-200 hover:bg-dark-700 transition inline-flex items-center gap-2">
+              <button className="px-5 py-3 rounded-xl border-2 border-foreground/10 text-foreground font-bold hover:bg-light-800 transition inline-flex items-center gap-2">
                 <Users size={18} /> Assign judge
               </button>
             </div>
@@ -500,52 +620,52 @@ export const AdminPage = () => {
         </div>
 
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-          <div className="card">
+          <div className="editorial-card">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Ideas</p>
-                <h3 className="text-3xl font-bold text-white">{stats?.totalIdeas || 0}</h3>
+                <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Ideas</p>
+                <h3 className="text-3xl font-bold text-foreground">{stats?.totalIdeas || 0}</h3>
               </div>
               <FileCheck className="text-accent-500" size={32} />
             </div>
             <p className="text-sm text-green-400">{stats?.approvedIdeas || 0} approved</p>
           </div>
 
-          <div className="card">
+          <div className="editorial-card">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Pending review</p>
+                <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Pending review</p>
                 <h3 className="text-3xl font-bold text-warning">{stats?.pendingReview || 0}</h3>
               </div>
               <AlertCircle className="text-warning" size={32} />
             </div>
-            <p className="text-sm text-gray-400">Awaiting approval</p>
+            <p className="text-sm text-mutedForeground">Awaiting approval</p>
           </div>
 
-          <div className="card">
+          <div className="editorial-card">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Teams</p>
-                <h3 className="text-3xl font-bold text-white">{stats?.totalTeams || 0}</h3>
+                <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Teams</p>
+                <h3 className="text-3xl font-bold text-foreground">{stats?.totalTeams || 0}</h3>
               </div>
               <Users className="text-accent-500" size={32} />
             </div>
-            <p className="text-sm text-gray-400">Active teams</p>
+            <p className="text-sm text-mutedForeground">Active teams</p>
           </div>
 
-          <div className="card">
+          <div className="editorial-card">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Results</p>
+                <p className="text-mutedForeground text-sm uppercase tracking-wider mb-2">Results</p>
                 <h3 className="text-3xl font-bold text-success">{stats?.acceptedProjects || 0}</h3>
               </div>
               <BarChart3 className="text-success" size={32} />
             </div>
-            <p className="text-sm text-gray-400">Accepted projects</p>
+            <p className="text-sm text-mutedForeground">Accepted projects</p>
           </div>
         </div>
 
-        <div className="flex gap-3 mb-8 border-b border-dark-600 overflow-x-auto pb-1">
+        <div className="flex gap-3 mb-8 border-b border-foreground/10 overflow-x-auto pb-1">
           {controlSections.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -555,7 +675,7 @@ export const AdminPage = () => {
                 className={`px-4 py-3 font-semibold capitalize transition-all whitespace-nowrap inline-flex items-center gap-2 ${
                   activeTab === tab.id
                     ? 'text-accent-500 border-b-2 border-accent-500'
-                    : 'text-gray-300 hover:text-white'
+                    : 'text-mutedForeground hover:text-foreground'
                 }`}
               >
                 <Icon size={16} />

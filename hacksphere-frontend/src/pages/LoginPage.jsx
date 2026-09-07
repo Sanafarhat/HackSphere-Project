@@ -28,27 +28,27 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-light/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="glass rounded-2xl p-8 border border-dark-600">
+        <div className="editorial-card w-full">
           <div className="flex items-center gap-3 mb-8">
             <button
               onClick={() => navigate('/')}
-              className="p-2 hover:bg-dark-700 rounded-lg transition"
+              className="p-2 hover:bg-light-700 rounded-none transition border-2 border-transparent hover:border-foreground"
             >
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-display font-bold text-white">
+              <h1 className="text-3xl font-display font-bold text-foreground uppercase">
                 Welcome back.
               </h1>
-              <p className="text-gray-300 text-sm">
+              <p className="text-mutedForeground text-sm mt-1">
                 Log in to access your dashboard, team formation, and submissions.
               </p>
             </div>
@@ -56,7 +56,7 @@ export const LoginPage = () => {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-sm font-semibold text-gray-200 mb-2">Email</label>
+              <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">Email</label>
               <input
                 type="email"
                 value={email}
@@ -68,7 +68,7 @@ export const LoginPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-200 mb-2">Password</label>
+              <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -81,7 +81,7 @@ export const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-mutedForeground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -103,14 +103,14 @@ export const LoginPage = () => {
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-dark-600 text-center">
-            <p className="text-gray-300 text-sm mb-4">
+          <div className="mt-8 pt-8 border-t-2 border-foreground/10 text-center">
+            <p className="text-foreground text-sm mb-4 font-bold">
               Don't have an account?{' '}
-              <Link to="/register" className="text-accent-500 hover:text-accent-400 font-semibold">
+              <Link to="/register" className="text-accent hover:text-accent-hover font-black uppercase tracking-wider ml-1">
                 Register
               </Link>
             </p>
-            <Link to="/" className="text-gray-400 hover:text-gray-200 text-sm">
+            <Link to="/" className="text-mutedForeground hover:text-foreground text-sm font-bold uppercase tracking-wider">
               ← Back to Home
             </Link>
           </div>

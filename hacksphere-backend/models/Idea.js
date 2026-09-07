@@ -20,6 +20,11 @@ const ideaSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Team',
     },
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+      index: true,
+    },
     submittedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

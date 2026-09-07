@@ -8,6 +8,11 @@ const progressSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+      index: true,
+    },
     ideaValidated: { type: Boolean, default: false },
     repoCreated: { type: Boolean, default: false },
     prototypeStarted: { type: Boolean, default: false },

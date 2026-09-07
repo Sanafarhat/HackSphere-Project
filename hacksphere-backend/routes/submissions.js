@@ -1,5 +1,7 @@
 import express from 'express';
+import Event from '../models/Event.js';
 import { verifyToken, requireAdmin } from '../middleware/auth.js';
+import { requireEventPhase } from '../middleware/eventPhase.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import Submission from '../models/Submission.js';
@@ -22,8 +24,13 @@ const calculatePercentage = (p) => {
   return Math.min(100, Math.round(percent));
 };
 
+const getActiveEventId = async () => {
+  const activeEvent = await Event.findOne({ isActive: true }).select('_id');
+  return activeEvent?._id || null;
+};
+
 // Submit final project (only team leader)
-router.post('/submit', verifyToken, async (req, res) => {
+router.post('/submit', verifyToken, requireEventPhase(['hacking'], { bypassRoles: ['platformAdmin'] }), async (req, res) => {
   try {
     const { title, description, githubUrl, demoUrl } = req.body;
     if (!title || !description || !githubUrl) {
@@ -45,9 +52,11 @@ router.post('/submit', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Invalid GitHub URL' });
     }
 
+    const activeEventId = team.event || user.event || (await getActiveEventId());
+
     let submission = await Submission.findOne({ team: team._id });
     if (!submission) {
-      submission = new Submission({ title, description, githubUrl, demoUrl, team: team._id, submittedBy: req.user._id });
+      submission = new Submission({ title, description, githubUrl, demoUrl, team: team._id, submittedBy: req.user._id, event: activeEventId });
     } else {
       submission.title = title;
       submission.description = description;
@@ -56,6 +65,9 @@ router.post('/submit', verifyToken, async (req, res) => {
       submission.submittedAt = new Date();
       submission.status = 'submitted';
       submission.submittedBy = req.user._id;
+      if (!submission.event && activeEventId) {
+        submission.event = activeEventId;
+      }
     }
 
     await submission.save();
@@ -81,7 +93,7 @@ router.get('/my', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user || !user.team) return res.status(200).json(null);
-    const submission = await Submission.findOne({ team: user.team });
+    const submission = await Submission.findOne({ team: user.team, ...(user.event ? { event: user.event } : {}) });
     res.json(submission || null);
   } catch (error) {
     console.error(error);
@@ -92,7 +104,8 @@ router.get('/my', verifyToken, async (req, res) => {
 // Get public gallery submissions (accepted projects)
 router.get('/gallery/public', async (req, res) => {
   try {
-    const submissions = await Submission.find({ status: 'accepted' })
+    const activeEventId = await getActiveEventId();
+    const submissions = await Submission.find({ status: 'accepted', ...(activeEventId ? { event: activeEventId } : {}) })
       .populate('team', 'name description')
       .populate('submittedBy', 'name')
       .sort({ submittedAt: -1 })

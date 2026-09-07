@@ -1,21 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, LogIn } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const Navigation = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollToSection = (id) => {
+    setIsOpen(false);
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
-    // Not on page — navigate to home then attempt to scroll
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
@@ -31,153 +42,136 @@ export const Navigation = () => {
     setIsOpen(false);
   };
 
+  const navVariants = {
+    hidden: { y: -100, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } }
+  };
+
   return (
-    <nav className="fixed top-0 w-full z-50 glass border-b border-dark-600">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+    <motion.nav 
+      variants={navVariants}
+      initial="hidden"
+      animate="visible"
+      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+        scrolled ? 'bg-background/90 backdrop-blur-md border-b-2 border-foreground py-2' : 'bg-transparent py-6'
+      }`}
+    >
+      <div className="container-custom">
+        <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center font-display font-bold text-dark-900">
+          <Link to="/" className="flex items-center space-x-2 group z-50">
+            <div className="w-12 h-12 border-2 border-foreground bg-accent text-background flex items-center justify-center font-display font-black text-2xl group-hover:bg-foreground transition-colors duration-300">
               H
             </div>
-            <span className="text-2xl font-display font-bold gradient-text hidden sm:block">
+            <span className="text-2xl font-display font-black tracking-tighter text-foreground uppercase hidden sm:block">
               HackSphere
             </span>
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-10">
             <button onClick={() => scrollToSection('features')} className="nav-link">
               Features
             </button>
             <button onClick={() => scrollToSection('journey')} className="nav-link">
-              Journey
+              Process
             </button>
-            <Link to="/gallery" className="nav-link">Gallery</Link>
-            {!user && (
-              <>
-                <Link to="/register" className="nav-link">
-                  Register
-                </Link>
-                <button
-                  onClick={() => navigate('/login')}
-                  className="btn-primary text-sm"
-                >
-                  Login
-                </button>
-              </>
-            )}
-            {user && (
-              <>
-                <Link
-                  to="/dashboard"
-                  className="nav-link"
-                >
-                  Dashboard
-                </Link>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="nav-link text-warning"
-                  >
-                    Admin
+            <Link to="/gallery" className="nav-link">Archive</Link>
+            
+            <div className="flex items-center space-x-4 pl-4 border-l-2 border-foreground/10">
+              {!user ? (
+                <>
+                  <Link to="/login" className="nav-link">
+                    Log In
                   </Link>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 nav-link hover:text-danger"
-                >
-                  <LogOut size={18} />
-                  <span>Logout</span>
-                </button>
-              </>
-            )}
+                  <Link to="/register" className="btn-primary px-6 py-2 text-sm border-2 border-foreground">
+                    <span>Enter Arena &rarr;</span>
+                  </Link>
+                </>
+              ) : (
+                <div className="relative">
+                  <button 
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
+                    className="w-10 h-10 rounded-full border-2 border-foreground bg-light-800 flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
+                  >
+                    <User size={20} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-4 w-48 bg-background border-2 border-foreground shadow-[6px_6px_0px_0px_rgba(15,16,20,1)] rounded-lg overflow-hidden flex flex-col"
+                      >
+                        <Link to="/dashboard" className="px-4 py-3 hover:bg-light-800 font-bold font-display uppercase border-b-[1px] border-foreground/20 text-foreground transition-colors">
+                          Dashboard
+                        </Link>
+                        {(user.role === 'platformAdmin' || user.role === 'admin') && (
+                          <Link to="/admin" className="px-4 py-3 hover:bg-light-800 font-bold font-display uppercase border-b-[1px] border-foreground/20 text-accent transition-colors">
+                            Admin
+                          </Link>
+                        )}
+                        <button onClick={handleLogout} className="px-4 py-3 hover:bg-accent hover:text-white font-bold font-display uppercase text-left text-foreground transition-colors">
+                          Log Out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 hover:bg-dark-700 rounded-lg transition"
+            className="md:hidden p-2 z-50 text-foreground"
+            aria-label="Toggle Menu"
           >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+            {isOpen ? <X size={32} /> : <Menu size={32} />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
-        {isOpen && (
-          <div className="md:hidden absolute top-20 left-0 right-0 bg-dark-800 border-b border-dark-600 p-4 space-y-4">
-            <Link
-              to="/#features"
-              className="nav-link block py-2"
-              onClick={() => setIsOpen(false)}
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, clipPath: 'circle(0% at top right)' }}
+              animate={{ opacity: 1, clipPath: 'circle(150% at top right)' }}
+              exit={{ opacity: 0, clipPath: 'circle(0% at top right)' }}
+              transition={{ type: 'spring', stiffness: 20, damping: 10 }}
+              className="fixed inset-0 bg-foreground flex flex-col justify-center items-center h-screen z-40"
             >
-              Features
-            </Link>
-            <Link
-              to="/#journey"
-              className="nav-link block py-2"
-              onClick={() => setIsOpen(false)}
-            >
-              Journey
-            </Link>
-            <Link
-              to="/gallery"
-              className="nav-link block py-2"
-              onClick={() => setIsOpen(false)}
-            >
-              Gallery
-            </Link>
-            {!user && (
-              <>
-                <Link
-                  to="/register"
-                  className="nav-link block py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Register
-                </Link>
-                <button
-                  onClick={() => {
-                    navigate('/login');
-                    setIsOpen(false);
-                  }}
-                  className="btn-primary w-full text-center"
-                >
-                  Login
-                </button>
-              </>
-            )}
-            {user && (
-              <>
-                <Link
-                  to="/dashboard"
-                  className="nav-link block py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="nav-link block py-2 text-warning"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Admin Panel
-                  </Link>
+              <div className="flex flex-col items-center space-y-8 text-background text-3xl font-display font-black uppercase">
+                <button onClick={() => scrollToSection('features')} className="hover:text-accent transition-colors">Features</button>
+                <button onClick={() => scrollToSection('journey')} className="hover:text-accent transition-colors">Process</button>
+                <Link to="/gallery" onClick={() => setIsOpen(false)} className="hover:text-accent transition-colors">Archive</Link>
+                
+                <div className="h-px w-32 bg-background/20 my-8"></div>
+                
+                {!user ? (
+                  <>
+                    <Link to="/login" onClick={() => setIsOpen(false)} className="hover:text-accent transition-colors">Log In</Link>
+                    <Link to="/register" onClick={() => setIsOpen(false)} className="text-accent hover:text-background transition-colors">Register</Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)} className="hover:text-accent transition-colors">Dashboard</Link>
+                    {(user.role === 'platformAdmin' || user.role === 'admin') && (
+                      <Link to="/admin" onClick={() => setIsOpen(false)} className="hover:text-accent transition-colors">Admin</Link>
+                    )}
+                    <button onClick={handleLogout} className="hover:text-accent transition-colors">Log Out</button>
+                  </>
                 )}
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center space-x-2 py-2 nav-link hover:text-danger"
-                >
-                  <LogOut size={18} />
-                  <span>Logout</span>
-                </button>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </nav>
+    </motion.nav>
   );
 };
 

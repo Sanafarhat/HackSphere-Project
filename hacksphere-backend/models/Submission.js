@@ -8,6 +8,7 @@ const submissionSchema = new mongoose.Schema(
     demoUrl: { type: String },
     team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
     submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', index: true },
     status: { type: String, enum: ['pending','submitted','accepted','rejected'], default: 'submitted' },
     submittedAt: { type: Date, default: Date.now },
   },

@@ -1,8 +1,10 @@
 import express from 'express';
 import Idea from '../models/Idea.js';
+import Event from '../models/Event.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import { verifyToken, requireAdmin } from '../middleware/auth.js';
+import { requireEventPhase } from '../middleware/eventPhase.js';
 import jwt from 'jsonwebtoken';
 import { Groq } from 'groq-sdk';
 import { sendTeamInviteEmail, sendWelcomeEmail } from '../utils/SendEmail.js';
@@ -23,6 +25,11 @@ const INVITE_TOKEN_EXPIRES_IN = '7d';
 
 const normalizeEmail = (email) => (email || '').trim().toLowerCase();
 
+const getActiveEventId = async () => {
+  const activeEvent = await Event.findOne({ isActive: true }).select('_id');
+  return activeEvent?._id || null;
+};
+
 const createInviteToken = ({ teamId, email }) =>
   jwt.sign({ teamId, email: normalizeEmail(email) }, process.env.JWT_SECRET, {
     expiresIn: INVITE_TOKEN_EXPIRES_IN,
@@ -36,7 +43,7 @@ const buildTeamPayload = (team) =>
   ]);
 
 // Create a team and send email invites
-router.post('/create', verifyToken, async (req, res) => {
+router.post('/create', verifyToken, requireEventPhase(['registration', 'hacking'], { bypassRoles: ['platformAdmin'] }), async (req, res) => {
   try {
     const {
       name,
@@ -60,6 +67,8 @@ router.post('/create', verifyToken, async (req, res) => {
     if (leader.team) {
       return res.status(400).json({ message: 'You already belong to a team' });
     }
+
+    const activeEventId = await getActiveEventId();
 
     const uniqueEmails = [...new Set((memberEmails || []).map(normalizeEmail).filter(Boolean))].filter(
       (email) => email !== normalizeEmail(leader.email)
@@ -92,6 +101,7 @@ router.post('/create', verifyToken, async (req, res) => {
       description,
       leader: leader._id,
       members: [leader._id],
+      event: activeEventId,
       requiredSkills,
       techStack,
       openToMembers,
@@ -199,9 +209,14 @@ router.patch('/my-team', verifyToken, async (req, res) => {
 router.get('/open', async (req, res) => {
   try {
     const filter = (req.query.filter || '').trim();
+    const activeEventId = await getActiveEventId();
     const query = {
       openToMembers: true,
     };
+
+    if (activeEventId) {
+      query.event = activeEventId;
+    }
 
     if (filter) {
       query.$or = [
@@ -232,7 +247,11 @@ router.get('/recommended', verifyToken, async (req, res) => {
     }
 
     // Get all open teams
-    const openTeams = await Team.find({ openToMembers: true })
+    const activeEventId = await getActiveEventId();
+    const openTeams = await Team.find({
+      openToMembers: true,
+      ...(activeEventId ? { event: activeEventId } : {}),
+    })
       .populate('leader', 'name email department year skills')
       .populate('members', 'name email department year skills')
       .sort({ createdAt: -1 });
@@ -273,7 +292,7 @@ Match score factors: skill match (40%), tech stack interest (25%), team size fit
 Base all scores on the information provided.`;
 
     const message = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'qwen/qwen3.8-27b',
       max_tokens: 500,
       messages: [
         {
@@ -499,101 +518,6 @@ router.post('/resend-invite', verifyToken, async (req, res) => {
   }
 });
 
-// Note: Idea validation has been moved to routes/ideas.js to avoid duplication.
-// Team-related routes should focus on team management only.
 
-// Submit idea (finalize)
-router.post('/submit', verifyToken, async (req, res) => {
-  try {
-    const { title, description, problemStatement, techStack, targetUsers, validationScore } = req.body;
-
-    const user = await User.findById(req.user._id);
-    if (!user.team) {
-      return res.status(400).json({ message: 'You must be in a team to submit an idea' });
-    }
-
-    let idea = await Idea.findOne({ submittedBy: req.user._id });
-    if (!idea) {
-      idea = new Idea({
-        title,
-        description,
-        problemStatement,
-        techStack,
-        targetUsers,
-        submittedBy: req.user._id,
-        team: user.team,
-        validationScore,
-        isValidated: true,
-        isApproved: validationScore >= 75,
-      });
-      await idea.save();
-    } else {
-      idea.isApproved = validationScore >= 75;
-      await idea.save();
-    }
-
-    await Team.findByIdAndUpdate(user.team, { idea: idea._id });
-
-    res.json({
-      message: 'Idea submitted successfully',
-      idea,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get my idea
-router.get('/my-idea', verifyToken, async (req, res) => {
-  try {
-    const idea = await Idea.findOne({ submittedBy: req.user._id });
-
-    // ✅ Return null instead of 404 — dashboard handles null gracefully
-    if (!idea) {
-      return res.status(200).json(null);
-    }
-
-    res.json(idea);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get all ideas (admin)
-router.get('/admin/all', verifyToken, requireAdmin, async (req, res) => {
-  try {
-    const ideas = await Idea.find()
-      .populate('submittedBy', 'name email')
-      .populate('team', 'name members');
-
-    res.json(ideas);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Override idea approval (admin)
-router.put('/admin/override/:ideaId', verifyToken, requireAdmin, async (req, res) => {
-  try {
-    const { reason, approved } = req.body;
-
-    const idea = await Idea.findByIdAndUpdate(
-      req.params.ideaId,
-      {
-        isApproved: approved,
-        adminOverride: {
-          isOverridden: true,
-          reason,
-          overriddenBy: req.user._id,
-        },
-      },
-      { new: true }
-    );
-
-    res.json(idea);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 export default router;

@@ -22,6 +22,11 @@ const teamSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Idea',
     },
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+      index: true,
+    },
     requiredSkills: [String],
     techStack: String,
     openToMembers: {

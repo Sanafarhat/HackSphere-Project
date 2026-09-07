@@ -93,7 +93,7 @@ Match score factors: skill complementarity (40%), department relevance (20%), ye
 Base all scores on the information provided.`;
 
     const message = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'qwen/qwen3.8-27b',
       max_tokens: 500,
       messages: [
         {
@@ -217,7 +217,7 @@ Score factors: skill complementarity (35%), idea validation progress (25%), team
 Base all scores on the information provided.`;
 
     const message = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'qwen/qwen3.8-27b',
       max_tokens: 800,
       messages: [
         {

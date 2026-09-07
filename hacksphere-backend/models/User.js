@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'mentor', 'admin'],
+      enum: ['student', 'organizer', 'platformAdmin', 'mentor', 'admin'],
       default: 'student',
     },
     department: String,
@@ -52,6 +52,10 @@ const userSchema = new mongoose.Schema(
     idea: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Idea',
+    },
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
     },
     notifications: [
       {

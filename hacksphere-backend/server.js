@@ -16,8 +16,10 @@ import joinRequestRoutes from './routes/joinRequests.js';
 import collaborationRequestRoutes from './routes/collaborationRequests.js';
 import studentRoutes from './routes/students.js';
 import submissionRoutes from './routes/submissions.js';
+import eventRoutes from './routes/events.js';
 import notificationRoutes from './routes/notifications.js';
 import { verifyToken } from './middleware/auth.js';
+import { requireEventPhase, withActiveEvent } from './middleware/eventPhase.js';
 import Progress from './models/Progress.js';
 import Team from './models/Team.js';
 import User from './models/User.js';
@@ -102,6 +104,7 @@ app.use('/api/join-requests', joinRequestRoutes);
 app.use('/api/collaboration-requests', collaborationRequestRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Health check
@@ -127,20 +130,24 @@ const calculatePercentage = (p) => {
 };
 
 // Get current user's team progress
-app.get('/api/progress/my-progress', verifyToken, async (req, res) => {
+app.get('/api/progress/my-progress', verifyToken, withActiveEvent, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user || !user.team) return res.status(200).json(null);
 
     const team = await Team.findById(user.team).populate('idea');
+    if (req.activeEvent && team?.event && team.event.toString() !== req.activeEvent._id.toString()) {
+      return res.status(200).json(null);
+    }
 
     // Try to find a progress document
-    let progress = await Progress.findOne({ team: team._id });
+    let progress = await Progress.findOne({ team: team._id, ...(req.activeEvent ? { event: req.activeEvent._id } : {}) });
 
     // If no progress doc exists, synthesize from available data
     if (!progress) {
       const synth = {
         team: team._id,
+        event: req.activeEvent?._id,
         ideaValidated: Boolean(team.idea && team.idea.isValidated),
         repoCreated: false,
         prototypeStarted: false,
@@ -172,12 +179,16 @@ app.get('/api/progress/my-progress', verifyToken, async (req, res) => {
 });
 
 // Alerts: return simple alerts for missing milestones and upcoming deadlines
-app.get('/api/progress/alerts', verifyToken, async (req, res) => {
+app.get('/api/progress/alerts', verifyToken, withActiveEvent, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user || !user.team) return res.status(200).json([]);
-    const progress = await Progress.findOne({ team: user.team });
+    const progress = await Progress.findOne({ team: user.team, ...(req.activeEvent ? { event: req.activeEvent._id } : {}) });
     const team = await Team.findById(user.team).populate('leader', 'name');
+
+    if (req.activeEvent && team?.event && team.event.toString() !== req.activeEvent._id.toString()) {
+      return res.status(200).json({ team: null, alerts: [] });
+    }
 
     const alerts = [];
     const now = new Date();
@@ -209,10 +220,10 @@ app.get('/api/progress/alerts', verifyToken, async (req, res) => {
 });
 
 // Leaderboard: teams sorted by progress percentage desc
-app.get('/api/progress/leaderboard', async (req, res) => {
+app.get('/api/progress/leaderboard', withActiveEvent, async (req, res) => {
   try {
     // get all progress docs, compute percentage if missing, join team and leader
-    const progresses = await Progress.find().lean();
+    const progresses = await Progress.find(req.activeEvent ? { event: req.activeEvent._id } : {}).lean();
     const rows = [];
     for (const p of progresses) {
       const team = await Team.findById(p.team).populate('leader', 'name');
@@ -229,7 +240,7 @@ app.get('/api/progress/leaderboard', async (req, res) => {
 });
 
 // Update progress (only team lead can update their team's milestones)
-app.patch('/api/progress/update', verifyToken, async (req, res) => {
+app.patch('/api/progress/update', verifyToken, requireEventPhase(['hacking', 'judging'], { bypassRoles: ['platformAdmin'] }), async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user || !user.team) return res.status(400).json({ message: 'You are not part of a team' });
@@ -244,9 +255,9 @@ app.patch('/api/progress/update', verifyToken, async (req, res) => {
 
     // Allowed fields to update
     const allowed = ['ideaValidated', 'repoCreated', 'prototypeStarted', 'midCheckpoint', 'finalSubmission', 'deadlines'];
-    let progress = await Progress.findOne({ team: team._id });
+    let progress = await Progress.findOne({ team: team._id, ...(req.activeEvent ? { event: req.activeEvent._id } : {}) });
     if (!progress) {
-      progress = new Progress({ team: team._id });
+      progress = new Progress({ team: team._id, event: req.activeEvent?._id });
     }
 
     for (const key of Object.keys(req.body || {})) {

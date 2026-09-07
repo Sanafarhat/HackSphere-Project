@@ -248,15 +248,15 @@ export const RegisterPage = () => {
   // ── STEP 1: Personal Info ──
   if (step === 1) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
         <div className="w-full max-w-lg">
-          <div className="glass rounded-2xl p-8 border border-dark-600">
-            <h1 className="text-3xl font-display font-bold mb-2 text-white">Join HackSphere</h1>
-            <p className="text-gray-300 mb-8">Step 1 of 4 — Your Basic Info</p>
+          <div className="editorial-card w-full">
+            <h1 className="text-3xl font-display font-bold mb-2 text-foreground">Join HackSphere</h1>
+            <p className="text-mutedForeground font-bold mb-8">Step 1 of 4 — Your Basic Info</p>
 
             <form className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Full Name</label>
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Full Name</label>
                 <input
                   type="text"
                   name="name"
@@ -269,7 +269,7 @@ export const RegisterPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Email</label>
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Email</label>
                 <input
                   type="email"
                   name="email"
@@ -282,7 +282,7 @@ export const RegisterPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Department</label>
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Department</label>
                 <select
                   name="department"
                   value={formData.department}
@@ -301,7 +301,7 @@ export const RegisterPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Year of Study</label>
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Year of Study</label>
                 <select
                   name="year"
                   value={formData.year}
@@ -318,9 +318,9 @@ export const RegisterPage = () => {
               </div>
 
               <div ref={skillsDropdownRef}>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">
                   Skills (Select 2-4)
-                  <span className="text-xs text-gray-400 ml-1">
+                  <span className="text-xs text-mutedForeground font-semibold ml-1">
                     {formData.skills.length}/4 selected
                   </span>
                 </label>
@@ -342,11 +342,11 @@ export const RegisterPage = () => {
                   </button>
 
                   {skillsDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-dark-800 border border-dark-600 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-foreground border border-foreground/20 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                       {SKILLS_OPTIONS.map((skill) => (
                         <label
                           key={skill}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-dark-700 cursor-pointer border-b border-dark-600 last:border-b-0 transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-light-800 border border-foreground cursor-pointer border-b border-foreground/20 last:border-b-0 transition-colors"
                         >
                           <input
                             type="checkbox"
@@ -355,7 +355,7 @@ export const RegisterPage = () => {
                             disabled={!formData.skills.includes(skill) && formData.skills.length >= 4}
                             className="w-4 h-4 accent-accent-500 cursor-pointer"
                           />
-                          <span className="text-gray-200">{skill}</span>
+                          <span className="text-foreground uppercase font-bold tracking-wider">{skill}</span>
                         </label>
                       ))}
                     </div>
@@ -418,15 +418,15 @@ export const RegisterPage = () => {
   // ── STEP 2: Password ──
   if (step === 2) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
         <div className="w-full max-w-lg">
-          <div className="glass rounded-2xl p-8 border border-dark-600">
-            <h1 className="text-3xl font-display font-bold mb-2 text-white">Set Your Password</h1>
-            <p className="text-gray-300 mb-8">Step 2 of 4 — Secure Your Account</p>
+          <div className="editorial-card w-full">
+            <h1 className="text-3xl font-display font-bold mb-2 text-foreground">Set Your Password</h1>
+            <p className="text-mutedForeground font-bold mb-8">Step 2 of 4 — Secure Your Account</p>
 
             <form className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Password</label>
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Password</label>
                 <input
                   type="password"
                   name="password"
@@ -439,7 +439,7 @@ export const RegisterPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-200 mb-2">Confirm Password</label>
+                <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Confirm Password</label>
                 <input
                   type="password"
                   name="confirmPassword"
@@ -500,11 +500,11 @@ export const RegisterPage = () => {
   // ── STEP 3: Team Choice ──
   if (step === 3) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24">
         <div className="w-full max-w-2xl">
-          <div className="glass rounded-2xl p-8 border border-dark-600">
-            <h1 className="text-3xl font-display font-bold mb-2 text-white">Your Team & Idea</h1>
-            <p className="text-gray-300 mb-12">Step 3 of 4 — Choose Your Path</p>
+          <div className="editorial-card w-full">
+            <h1 className="text-3xl font-display font-bold mb-2 text-foreground">Your Team & Idea</h1>
+            <p className="text-mutedForeground font-bold mb-12">Step 3 of 4 — Choose Your Path</p>
 
             <div className="space-y-4">
               <div
@@ -512,12 +512,12 @@ export const RegisterPage = () => {
                 className="card cursor-pointer hover:border-accent-500 p-8 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400 flex-shrink-0">
+                  <div className="w-12 h-12 bg-light-800 border border-foreground rounded-lg flex items-center justify-center text-foreground flex-shrink-0">
                     <CheckCircle size={24} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2">I have a team</h3>
-                    <p className="text-gray-300">I already have teammates. I'll invite them via email to join my team.</p>
+                    <h3 className="text-xl font-bold text-foreground mb-2">I have a team</h3>
+                    <p className="text-mutedForeground font-bold">I already have teammates. I'll invite them via email to join my team.</p>
                   </div>
                   <ArrowRight className="text-accent-500 flex-shrink-0" size={24} />
                 </div>
@@ -528,12 +528,12 @@ export const RegisterPage = () => {
                 className="card cursor-pointer hover:border-accent-500 p-8 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400 flex-shrink-0">
+                  <div className="w-12 h-12 bg-light-800 border border-foreground rounded-lg flex items-center justify-center text-foreground flex-shrink-0">
                     <CheckCircle size={24} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2">No team, No idea</h3>
-                    <p className="text-gray-300">AI will recommend open teams looking for members based on your skills.</p>
+                    <h3 className="text-xl font-bold text-foreground mb-2">No team, No idea</h3>
+                    <p className="text-mutedForeground font-bold">AI will recommend open teams looking for members based on your skills.</p>
                   </div>
                   <ArrowRight className="text-accent-500 flex-shrink-0" size={24} />
                 </div>
@@ -544,12 +544,12 @@ export const RegisterPage = () => {
                 className="card cursor-pointer hover:border-accent-500 p-8 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-400 flex-shrink-0">
+                  <div className="w-12 h-12 bg-light-800 border border-foreground rounded-lg flex items-center justify-center text-foreground flex-shrink-0">
                     <CheckCircle size={24} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2">No team, but I have an idea</h3>
-                    <p className="text-gray-300">AI will recommend solo students to collaborate with you on your idea.</p>
+                    <h3 className="text-xl font-bold text-foreground mb-2">No team, but I have an idea</h3>
+                    <p className="text-mutedForeground font-bold">AI will recommend solo students to collaborate with you on your idea.</p>
                   </div>
                   <ArrowRight className="text-accent-500 flex-shrink-0" size={24} />
                 </div>
@@ -572,19 +572,19 @@ export const RegisterPage = () => {
   // ── STEP 4: Team Details ──
   if (step === 4) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
         <div className="w-full max-w-lg">
-          <div className="glass rounded-2xl p-8 border border-dark-600">
+          <div className="editorial-card w-full">
 
             {/* PATH 1: Has Team */}
             {formData.hasTeam && (
               <>
-                <h1 className="text-3xl font-display font-bold mb-2 text-white">Invite Your Team</h1>
-                <p className="text-gray-300 mb-8">Step 4 of 4 — Add Team Members</p>
+                <h1 className="text-3xl font-display font-bold mb-2 text-foreground">Invite Your Team</h1>
+                <p className="text-mutedForeground font-bold mb-8">Step 4 of 4 — Add Team Members</p>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-200 mb-2">Team Name</label>
+                    <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Team Name</label>
                     <input
                       type="text"
                       name="teamName"
@@ -597,7 +597,7 @@ export const RegisterPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-200 mb-2">
+                    <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">
                       Team Members Email
                       <span className="text-accent-400 ml-2 text-xs font-normal">
                         {formData.teamEmails.length + 1}/5 members
@@ -635,13 +635,13 @@ export const RegisterPage = () => {
                         {formData.teamEmails.map((email, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between bg-dark-700 rounded-lg p-3"
+                            className="flex items-center justify-between bg-light-800 border border-foreground rounded-lg p-3"
                           >
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-full bg-accent-500/20 flex items-center justify-center text-accent-400 text-xs font-bold">
                                 {email.charAt(0).toUpperCase()}
                               </div>
-                              <span className="text-sm text-gray-300">{email}</span>
+                              <span className="text-sm text-mutedForeground font-bold">{email}</span>
                             </div>
                             <button
                               type="button"
@@ -668,7 +668,7 @@ export const RegisterPage = () => {
                     )}
 
                     {formData.teamEmails.length >= 5 && (
-                      <p className="text-xs text-primary-400 mt-1">
+                      <p className="text-xs text-foreground mt-1">
                         Maximum team size reached. You can enable "Open to New Members" in the dashboard later.
                       </p>
                     )}
@@ -703,8 +703,8 @@ export const RegisterPage = () => {
             {/* PATH 2: No Team, No Idea */}
             {!formData.hasTeam && !formData.hasIdea && (
               <>
-                <h1 className="text-3xl font-display font-bold mb-2 text-white">Ready to Find a Team</h1>
-                <p className="text-gray-300 mb-8">Step 4 of 4 — Complete Setup</p>
+                <h1 className="text-3xl font-display font-bold mb-2 text-foreground">Ready to Find a Team</h1>
+                <p className="text-mutedForeground font-bold mb-8">Step 4 of 4 — Complete Setup</p>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4">
@@ -742,12 +742,12 @@ export const RegisterPage = () => {
             {/* PATH 3: No Team, Has Idea */}
             {!formData.hasTeam && formData.hasIdea && (
               <>
-                <h1 className="text-3xl font-display font-bold mb-2 text-white">Tell Us Your Idea</h1>
-                <p className="text-gray-300 mb-8">Step 4 of 4 — Share Your Vision</p>
+                <h1 className="text-3xl font-display font-bold mb-2 text-foreground">Tell Us Your Idea</h1>
+                <p className="text-mutedForeground font-bold mb-8">Step 4 of 4 — Share Your Vision</p>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-200 mb-2">Your Hackathon Idea</label>
+                    <label className="block text-sm font-semibold text-foreground uppercase font-bold tracking-wider mb-2">Your Hackathon Idea</label>
                     <textarea
                       name="idea"
                       value={formData.idea}
@@ -759,7 +759,7 @@ export const RegisterPage = () => {
                     />
                   </div>
 
-                  <div className="flex items-center gap-3 p-4 bg-dark-700 rounded-lg border border-dark-600">
+                  <div className="flex items-center gap-3 p-4 bg-light-800 border border-foreground rounded-lg border border-foreground/20">
                     <input
                       type="checkbox"
                       id="openToNewMembers"
@@ -768,8 +768,8 @@ export const RegisterPage = () => {
                       className="w-5 h-5 accent-accent-500 cursor-pointer"
                     />
                     <label htmlFor="openToNewMembers" className="cursor-pointer flex-1">
-                      <p className="font-semibold text-gray-200">Open to New Members</p>
-                      <p className="text-xs text-gray-400 mt-1">Allow solo students to find and invite you to their teams</p>
+                      <p className="font-semibold text-foreground uppercase font-bold tracking-wider">Open to New Members</p>
+                      <p className="text-xs text-mutedForeground font-semibold mt-1">Allow solo students to find and invite you to their teams</p>
                     </label>
                   </div>
 
