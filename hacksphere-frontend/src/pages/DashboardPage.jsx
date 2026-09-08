@@ -144,11 +144,13 @@ export const DashboardPage = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-mutedForeground font-semibold text-sm uppercase tracking-wider mb-2">Team Status</p>
-                    <h3 className="text-2xl font-bold text-foreground">
+                    <h3 className={`text-2xl font-display font-black uppercase ${team ? 'text-success' : 'text-foreground'}`}>
                       {team ? 'Active' : 'Pending'}
                     </h3>
                   </div>
-                  <Users className="text-accent-500" size={32} />
+                  <div className={`p-3 rounded-2xl ${team ? 'bg-success/10 text-success' : 'bg-muted text-mutedForeground'}`}>
+                    <Users size={32} />
+                  </div>
                 </div>
                 {team ? (
                   <p className="text-sm text-mutedForeground">{team.members?.length} member{team.members?.length !== 1 ? 's' : ''}</p>
@@ -167,11 +169,13 @@ export const DashboardPage = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-mutedForeground font-semibold text-sm uppercase tracking-wider mb-2">Idea Status</p>
-                    <h3 className="text-2xl font-bold text-foreground">
+                    <h3 className={`text-2xl font-display font-black uppercase ${idea ? 'text-warning' : 'text-foreground'}`}>
                       {idea ? 'Validated' : 'Pending'}
                     </h3>
                   </div>
-                  <Zap className="text-warning" size={32} />
+                  <div className={`p-3 rounded-2xl ${idea ? 'bg-warning/10 text-warning' : 'bg-muted text-mutedForeground'}`}>
+                    <Zap size={32} />
+                  </div>
                 </div>
                 {idea ? (
                   <p className="text-sm text-mutedForeground">Score: {idea.validationScore || idea.score}/100</p>
@@ -190,15 +194,17 @@ export const DashboardPage = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-mutedForeground font-semibold text-sm uppercase tracking-wider mb-2">Overall Progress</p>
-                    <h3 className="text-2xl font-bold text-foreground">
+                    <h3 className="text-2xl font-display font-black text-accent uppercase">
                       {progress?.percentage || 0}%
                     </h3>
                   </div>
-                  <TrendingUp className="text-success" size={32} />
+                  <div className="p-3 rounded-2xl bg-accent/10 text-accent">
+                    <TrendingUp size={32} />
+                  </div>
                 </div>
-                <div className="w-full bg-white border-2 border-foreground/10 rounded-full h-2">
+                <div className="w-full bg-white border-2 border-foreground/10 rounded-full h-3 relative overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-accent-500 to-primary-500 h-2 rounded-full transition-all"
+                    className="absolute top-0 left-0 h-full bg-accent transition-all duration-1000 ease-out"
                     style={{ width: `${progress?.percentage || 0}%` }}
                   />
                 </div>
@@ -206,9 +212,10 @@ export const DashboardPage = () => {
             </div>
 
             {idea && (
-              <div className="editorial-card">
-                <h2 className="text-xl font-bold text-foreground mb-4">Current Project</h2>
-                <div className="space-y-4">
+              <div className="editorial-card border-l-8 border-l-accent relative overflow-hidden">
+                <div className="absolute -right-20 -top-20 w-64 h-64 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 className="text-xl font-display font-black text-foreground uppercase mb-6">Current Project</h2>
+                <div className="space-y-6 relative z-10">
                   <div>
                     <p className="text-sm text-mutedForeground font-semibold uppercase tracking-wider mb-1">Project Title</p>
                     <p className="text-lg font-semibold text-foreground">{idea.title}</p>
@@ -222,9 +229,10 @@ export const DashboardPage = () => {
             )}
 
             {/* Quick Actions */}
-            <div className="editorial-card">
-              <h2 className="text-xl font-bold text-foreground mb-4">Quick Actions</h2>
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="editorial-card relative overflow-hidden">
+              <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-success/5 rounded-full blur-3xl pointer-events-none"></div>
+              <h2 className="text-xl font-display font-black text-foreground uppercase mb-6 relative z-10">Quick Actions</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
                 {!team && (
                   <button onClick={() => navigate('/find-team')} className="btn-primary py-4">
                     Find a Team
