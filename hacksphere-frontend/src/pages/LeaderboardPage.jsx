@@ -12,8 +12,15 @@ const LeaderboardPage = () => {
     const fetch = async () => {
       try {
         setLoading(true);
-        const res = await axios.get('/api/progress/leaderboard');
-        setRows(res.data || []);
+        const dummyData = [
+          { teamId: 'd1', teamName: 'Quantum Coders', leader: 'Alice', members: 4, percentage: 95 },
+          { teamId: 'd2', teamName: 'EcoSync', leader: 'Bob', members: 5, percentage: 80 },
+          { teamId: 'd3', teamName: 'DeFi Pioneers', leader: 'Charlie', members: 3, percentage: 65 },
+          { teamId: 'd4', teamName: 'Cyber Knights', leader: 'Diana', members: 4, percentage: 40 },
+        ];
+        const combined = [...(res.data || []), ...dummyData];
+        const sorted = combined.sort((a, b) => b.percentage - a.percentage);
+        setRows(sorted);
       } catch (err) {
         console.error('Failed to fetch leaderboard', err);
       } finally {
@@ -25,31 +32,42 @@ const LeaderboardPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 pt-24 pb-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Trophy className="text-accent-500" /> Leaderboard</h1>
-          <button onClick={() => navigate('/dashboard')} className="text-sm text-accent-500 hover:text-accent-400">Back</button>
+    <div className="min-h-screen bg-background pt-24 pb-12">
+      <div className="container-custom">
+        <div className="mb-12 flex items-center justify-between">
+          <h1 className="text-4xl md:text-6xl font-display font-black text-foreground uppercase tracking-tight flex items-center gap-4">
+            <Trophy className="text-accent" size={48} /> Leaderboard
+          </h1>
+          <button onClick={() => navigate('/dashboard')} className="text-sm font-bold uppercase tracking-wider text-mutedForeground hover:text-accent transition-colors">Back to Dashboard</button>
         </div>
 
-        <div className="card">
+        <div className="editorial-card relative overflow-hidden">
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
+          
           {loading ? (
-            <p className="text-gray-400">Loading...</p>
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            </div>
           ) : rows.length === 0 ? (
-            <p className="text-gray-400">No leaderboard data yet.</p>
+            <p className="text-mutedForeground font-medium text-center py-12">No leaderboard data yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4 relative z-10">
               {rows.map((r, idx) => (
-                <div key={r.teamId} className="flex items-center justify-between p-3 bg-dark-800 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-accent-500 flex items-center justify-center text-black font-bold">{idx+1}</div>
+                <div key={r.teamId} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-white border-2 border-foreground/10 hover:border-accent/50 transition-colors rounded-xl">
+                  <div className="flex items-center gap-6 mb-4 sm:mb-0">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-display font-black text-2xl ${idx === 0 ? 'bg-warning text-white shadow-[4px_4px_0px_rgba(245,158,11,1)] border-2 border-warning' : idx === 1 ? 'bg-slate-300 text-slate-800' : idx === 2 ? 'bg-amber-700 text-amber-100' : 'bg-muted text-mutedForeground'}`}>
+                      {idx+1}
+                    </div>
                     <div>
-                      <p className="font-semibold text-white">{r.teamName}</p>
-                      <p className="text-xs text-gray-400">Lead: {r.leader || '—'} • Members: {r.members}</p>
+                      <p className="font-display font-black uppercase text-xl text-foreground mb-1">{r.teamName}</p>
+                      <p className="text-sm font-bold text-mutedForeground">Lead: {r.leader || '—'} • Members: {r.members}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-accent-500">{r.percentage}%</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-32 h-3 bg-muted rounded-full overflow-hidden hidden sm:block">
+                      <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${r.percentage}%` }}></div>
+                    </div>
+                    <p className="font-display font-black text-2xl text-accent w-16 text-right">{r.percentage}%</p>
                   </div>
                 </div>
               ))}
