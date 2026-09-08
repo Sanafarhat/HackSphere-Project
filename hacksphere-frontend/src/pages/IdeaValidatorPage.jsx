@@ -376,13 +376,13 @@ export const IdeaValidatorPage = () => {
               </div>
             </motion.div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="flex flex-col gap-6">
               {/* Main Feedback */}
               <motion.div 
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="lg:col-span-2 editorial-card bg-white"
+                className="editorial-card bg-white"
               >
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-foreground/10">
                   <div className="p-3 bg-accent/10 rounded-xl">
@@ -411,7 +411,7 @@ export const IdeaValidatorPage = () => {
                   <h4 className="text-xl font-display font-black text-foreground uppercase">Action Plan</h4>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {validation.suggestions?.map((suggestion, index) => (
                     <motion.div
                       key={index}
