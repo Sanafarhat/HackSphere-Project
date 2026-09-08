@@ -307,7 +307,7 @@ export const IdeaValidatorPage = () => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="space-y-8"
+            className="space-y-6"
           >
             {/* Score Card */}
             <motion.div 
@@ -318,7 +318,7 @@ export const IdeaValidatorPage = () => {
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
               
-              <div className="flex flex-col md:flex-row md:items-start justify-between mb-10 relative z-10 gap-6">
+              <div className="flex flex-col md:flex-row md:items-start justify-between mb-6 relative z-10 gap-6">
                 <div>
                   <h2 className="text-3xl font-display font-black text-foreground uppercase mb-2">
                     Validation Complete
@@ -338,7 +338,7 @@ export const IdeaValidatorPage = () => {
               </div>
 
               {/* Score Breakdown */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t-2 border-foreground/10 relative z-10">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t-2 border-foreground/10 relative z-10">
                 {[
                   { label: 'Feasibility', score: validation.feasibilityScore, icon: Target },
                   { label: 'Originality', score: validation.originalityScore, icon: Lightbulb },
@@ -390,10 +390,12 @@ export const IdeaValidatorPage = () => {
                   </div>
                   <h3 className="text-2xl font-display font-black text-foreground uppercase">AI Evaluation Analysis</h3>
                 </div>
-                <div className="prose prose-lg prose-p:font-medium prose-p:text-mutedForeground max-w-none">
-                  <p className="leading-relaxed text-lg">
-                    {validation.feedback}
-                  </p>
+                <div>
+                  <ul className="list-disc pl-5 space-y-3 marker:text-accent text-lg font-medium text-mutedForeground">
+                    {validation.feedback.split('\n').filter(line => line.trim()).map((bullet, idx) => (
+                      <li key={idx} className="leading-relaxed">{bullet.replace(/^[-*•]\s*/, '')}</li>
+                    ))}
+                  </ul>
                 </div>
               </motion.div>
 

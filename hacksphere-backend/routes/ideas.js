@@ -59,7 +59,7 @@ Return the response only in valid JSON format with this structure. ALL scores mu
   "originalityScore": number (0-100),
   "impactScore": number (0-100),
   "scopeScore": number (0-100),
-  "feedback": "string",
+  "feedback": ["string", "string", "string"], // Provide exactly 3 bullet points evaluating the idea
   "suggestions": ["string", "string", "string"]
 }
 
@@ -103,7 +103,7 @@ let responseText = message.choices[0]?.message?.content || '';
       originalityScore: validationData.originalityScore || 0,
       impactScore: validationData.impactScore || 0,
       scopeScore: validationData.scopeScore || 0,
-      feedback: validationData.feedback || 'No feedback provided',
+      feedback: Array.isArray(validationData.feedback) ? validationData.feedback.join('\n') : (validationData.feedback || 'No feedback provided'),
       suggestions: validationData.suggestions || [],
       isValidated: true,
     });
@@ -137,7 +137,7 @@ let responseText = message.choices[0]?.message?.content || '';
       originalityScore: validationData.originalityScore || 0,
       impactScore: validationData.impactScore || 0,
       scopeScore: validationData.scopeScore || 0,
-      feedback: validationData.feedback || 'No feedback provided',
+      feedback: Array.isArray(validationData.feedback) ? validationData.feedback.join('\n') : (validationData.feedback || 'No feedback provided'),
       suggestions: validationData.suggestions || [],
       title,
       description,
