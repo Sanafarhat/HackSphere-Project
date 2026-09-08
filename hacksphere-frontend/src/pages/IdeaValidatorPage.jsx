@@ -175,9 +175,9 @@ export const IdeaValidatorPage = () => {
             ) : null}
 
             {searchParams.get('revalidate') === 'true' && validation && !revalidateConfirmed && (
-              <div className="bg-red-900/20 border border-red-700 text-red-200 rounded-lg p-6 mb-6">
-                <p className="font-semibold">Confirm Revalidation</p>
-                <p className="text-sm text-mutedForeground font-semibold mt-2">
+              <div className="bg-danger/10 border-2 border-danger p-6 mb-6">
+                <h4 className="font-display font-black text-danger uppercase text-xl mb-2">Confirm Revalidation</h4>
+                <p className="text-sm font-bold text-danger/80">
                   Revalidating will delete your current idea and its existing validation results.
                   Once you proceed, you can enter a new idea and validate again.
                 </p>
@@ -185,7 +185,7 @@ export const IdeaValidatorPage = () => {
                   type="button"
                   onClick={handleStartRevalidate}
                   disabled={loading}
-                  className="mt-4 btn-secondary w-full py-3"
+                  className="mt-4 px-6 py-3 bg-danger text-white font-display font-bold uppercase transition-colors hover:bg-danger/80 w-full"
                 >
                   {loading ? 'Processing...' : 'Delete Old Idea and Continue'}
                 </button>
@@ -423,7 +423,7 @@ export const IdeaValidatorPage = () => {
                       <div className="shrink-0 w-8 h-8 bg-accent text-white flex items-center justify-center font-black text-lg">
                         {index + 1}
                       </div>
-                      <p className="text-sm font-bold text-foreground leading-snug">
+                      <p className="flex-1 min-w-0 text-sm font-bold text-foreground leading-snug break-words">
                         {suggestion}
                       </p>
                     </motion.div>
