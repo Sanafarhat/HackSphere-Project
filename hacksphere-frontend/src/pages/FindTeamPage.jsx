@@ -23,7 +23,33 @@ export const FindTeamPage = () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/teams/open?filter=' + filter);
-      setTeams(response.data);
+      const dummyTeams = [
+        {
+          _id: 'dummy1',
+          name: 'Quantum Coders',
+          description: 'Building an AI-powered code reviewer that actually understands architectural patterns. We need a frontend wiz.',
+          members: ['1', '2'],
+          maxMembers: 4,
+          requiredSkills: ['React', 'Tailwind', 'Framer Motion']
+        },
+        {
+          _id: 'dummy2',
+          name: 'EcoSync',
+          description: 'Hardware/software hybrid solution for optimizing smart grid distribution in university campuses.',
+          members: ['1', '2', '3'],
+          maxMembers: 5,
+          requiredSkills: ['IoT', 'Node.js', 'Python']
+        },
+        {
+          _id: 'dummy3',
+          name: 'DeFi Pioneers',
+          description: 'Creating a zero-knowledge proof based voting system for DAOs. Solidity experience is a huge plus.',
+          members: ['1'],
+          maxMembers: 4,
+          requiredSkills: ['Solidity', 'Web3.js', 'Rust']
+        }
+      ];
+      setTeams([...response.data, ...dummyTeams]);
     } catch (error) {
       console.error('Failed to fetch teams:', error);
     } finally {
@@ -56,21 +82,21 @@ export const FindTeamPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 pt-24 pb-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background pt-24 pb-12">
+      <div className="container-custom">
         {/* Header */}
         <div className="mb-12">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white mb-6"
+            className="flex items-center gap-2 text-mutedForeground font-bold hover:text-accent transition-colors mb-6 uppercase tracking-wider text-sm"
           >
             <ArrowLeft size={20} />
             Back to Dashboard
           </button>
-          <h1 className="text-4xl font-display font-bold mb-2 text-white">
-            Find Your Perfect <span className="gradient-accent">Team</span>
+          <h1 className="text-4xl md:text-6xl font-display font-black mb-4 text-foreground uppercase tracking-tight">
+            Find Your Perfect <span className="text-accent">Team</span>
           </h1>
-          <p className="text-gray-300">
+          <p className="text-xl text-mutedForeground font-light">
             Browse open teams looking for members with your skills. Send a join request to teams that match your interests.
           </p>
         </div>
@@ -92,13 +118,13 @@ export const FindTeamPage = () => {
         {/* Teams Grid */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
           </div>
         ) : teams.length === 0 ? (
-          <div className="card text-center py-16">
-            <Users size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No Open Teams Found</h3>
-            <p className="text-gray-300 mb-6">
+          <div className="editorial-card text-center py-16">
+            <Users size={48} className="mx-auto text-mutedForeground mb-4" />
+            <h3 className="text-2xl font-display font-black uppercase text-foreground mb-2">No Open Teams Found</h3>
+            <p className="text-mutedForeground mb-6 font-medium">
               Check back later or consider creating your own team with your idea.
             </p>
             <button
@@ -113,43 +139,43 @@ export const FindTeamPage = () => {
             {teams.map((team) => {
               const isRequested = sentRequests.includes(team._id);
               return (
-                <div key={team._id} className="card">
+                <div key={team._id} className="editorial-card flex flex-col">
                   <div className="mb-4">
-                    <h3 className="text-xl font-bold text-white mb-1">{team.name}</h3>
-                    <p className="text-sm text-gray-400">{team.members?.length || 0} members</p>
+                    <h3 className="text-2xl font-display font-black text-foreground uppercase mb-1">{team.name}</h3>
+                    <p className="text-sm font-bold text-mutedForeground">{team.members?.length || 0} members</p>
                   </div>
 
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                  <p className="text-mutedForeground font-medium text-sm mb-6 flex-1">
                     {team.description}
                   </p>
 
                   {/* Skills they're looking for */}
-                  <div className="mb-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <div className="mb-6">
+                    <p className="text-xs font-bold text-mutedForeground uppercase tracking-widest mb-3">
                       Looking for
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {team.requiredSkills?.slice(0, 3).map((skill, idx) => (
-                        <badge key={idx}>{skill}</badge>
+                        <span key={idx} className="badge bg-light-800 border-none">{skill}</span>
                       ))}
                     </div>
                   </div>
 
-                  <div className="mb-6 pb-6 border-b border-dark-600">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <div className="mb-6 pb-6 border-b-2 border-foreground/10">
+                    <p className="text-xs font-bold text-mutedForeground uppercase tracking-widest mb-2">
                       Team Size
                     </p>
-                    <p className="text-sm text-gray-300">
+                    <p className="text-lg font-black text-foreground">
                       {team.members?.length || 0} / {team.maxMembers} members
                     </p>
                   </div>
 
                   {isRequested ? (
-                    <button disabled className="w-full py-3 bg-dark-700 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                    <button disabled className="w-full py-4 border-2 border-foreground/20 bg-light-800 text-mutedForeground font-display font-bold uppercase cursor-not-allowed">
                       Request Sent
                     </button>
                   ) : (team.members?.length || 0) >= (team.maxMembers || 5) ? (
-                    <button disabled className="w-full py-3 bg-dark-700 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                    <button disabled className="w-full py-4 border-2 border-foreground/20 bg-light-800 text-mutedForeground font-display font-bold uppercase cursor-not-allowed">
                       Team Full
                     </button>
                   ) : (
@@ -171,10 +197,10 @@ export const FindTeamPage = () => {
 
         {/* Request Modal */}
         {selectedTeam && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass rounded-2xl p-8 border border-dark-600 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-white mb-4">Send Join Request</h2>
-              <p className="text-gray-300 mb-6">
+          <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white border-2 border-foreground shadow-[8px_8px_0px_rgba(0,0,0,1)] p-8 max-w-md w-full">
+              <h2 className="text-2xl font-display font-black text-foreground uppercase mb-4">Send Join Request</h2>
+              <p className="text-mutedForeground font-medium mb-6">
                 Add a message to help the team lead understand why you're a great fit.
               </p>
 
