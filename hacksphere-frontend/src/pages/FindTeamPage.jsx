@@ -68,10 +68,15 @@ export const FindTeamPage = () => {
 
   const handleSendRequest = async (teamId) => {
     try {
-      await axios.post('/api/join-requests/send', {
-        teamId,
-        message,
-      });
+      if (typeof teamId === 'string' && teamId.startsWith('dummy')) {
+        // Mock success for demo teams
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        await axios.post('/api/join-requests/send', {
+          teamId,
+          message,
+        });
+      }
       setSentRequests([...sentRequests, teamId]);
       setSelectedTeam(null);
       setMessage('');
