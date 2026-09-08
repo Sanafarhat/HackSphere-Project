@@ -23,33 +23,7 @@ export const FindTeamPage = () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/teams/open?filter=' + filter);
-      const dummyTeams = [
-        {
-          _id: 'dummy1',
-          name: 'Quantum Coders',
-          description: 'Building an AI-powered code reviewer that actually understands architectural patterns. We need a frontend wiz.',
-          members: ['1', '2'],
-          maxMembers: 4,
-          requiredSkills: ['React', 'Tailwind', 'Framer Motion']
-        },
-        {
-          _id: 'dummy2',
-          name: 'EcoSync',
-          description: 'Hardware/software hybrid solution for optimizing smart grid distribution in university campuses.',
-          members: ['1', '2', '3'],
-          maxMembers: 5,
-          requiredSkills: ['IoT', 'Node.js', 'Python']
-        },
-        {
-          _id: 'dummy3',
-          name: 'DeFi Pioneers',
-          description: 'Creating a zero-knowledge proof based voting system for DAOs. Solidity experience is a huge plus.',
-          members: ['1'],
-          maxMembers: 4,
-          requiredSkills: ['Solidity', 'Web3.js', 'Rust']
-        }
-      ];
-      setTeams([...response.data, ...dummyTeams]);
+      setTeams(response.data);
     } catch (error) {
       console.error('Failed to fetch teams:', error);
     } finally {
@@ -68,15 +42,10 @@ export const FindTeamPage = () => {
 
   const handleSendRequest = async (teamId) => {
     try {
-      if (typeof teamId === 'string' && teamId.startsWith('dummy')) {
-        // Mock success for demo teams
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } else {
-        await axios.post('/api/join-requests/send', {
-          teamId,
-          message,
-        });
-      }
+      await axios.post('/api/join-requests/send', {
+        teamId,
+        message,
+      });
       setSentRequests([...sentRequests, teamId]);
       setSelectedTeam(null);
       setMessage('');

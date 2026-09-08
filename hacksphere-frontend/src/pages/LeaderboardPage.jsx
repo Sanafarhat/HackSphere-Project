@@ -12,15 +12,8 @@ const LeaderboardPage = () => {
     const fetch = async () => {
       try {
         setLoading(true);
-        const dummyData = [
-          { teamId: 'd1', teamName: 'Quantum Coders', leader: 'Alice', members: 4, percentage: 95 },
-          { teamId: 'd2', teamName: 'EcoSync', leader: 'Bob', members: 5, percentage: 80 },
-          { teamId: 'd3', teamName: 'DeFi Pioneers', leader: 'Charlie', members: 3, percentage: 65 },
-          { teamId: 'd4', teamName: 'Cyber Knights', leader: 'Diana', members: 4, percentage: 40 },
-        ];
-        const combined = [...(res.data || []), ...dummyData];
-        const sorted = combined.sort((a, b) => b.percentage - a.percentage);
-        setRows(sorted);
+        const res = await axios.get('/api/progress/leaderboard');
+        setRows(res.data || []);
       } catch (err) {
         console.error('Failed to fetch leaderboard', err);
       } finally {
