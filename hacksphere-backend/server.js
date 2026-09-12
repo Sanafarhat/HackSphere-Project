@@ -1,8 +1,7 @@
-
+import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
@@ -24,8 +23,7 @@ import Progress from './models/Progress.js';
 import Team from './models/Team.js';
 import User from './models/User.js';
 
-// Load environment variables
-dotenv.config();
+
 
 // Connect to MongoDB
 await connectDB();

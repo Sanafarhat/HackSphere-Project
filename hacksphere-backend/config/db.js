@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
 
-  const connectDB = async () => {
-  console.log('TEST:', process.env.TEST);
-  console.log('MONGO:', process.env.MONGODB_URI);
+const connectDB = async () => {
+  console.log('TEST:', process.env.TEST ? 'configured' : 'undefined');
+  console.log('MONGO:', process.env.MONGO_URI ? 'configured' : 'undefined');
+
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
