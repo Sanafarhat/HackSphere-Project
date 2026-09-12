@@ -47,10 +47,13 @@ const dummyTeams = [
 
 async function seed() {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'REDACTED', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const mongoUri = process.env.MONGO_URI;
+
+if (!mongoUri) {
+  throw new Error('MONGO_URI is not defined in the environment variables');
+}
+
+await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 
     for (const data of dummyTeams) {
